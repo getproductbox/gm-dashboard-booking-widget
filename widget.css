@@ -1,0 +1,180 @@
+
+/* GM Booking Widget Styles */
+.gm-booking-widget {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  color: #333;
+}
+
+.gm-booking-widget * {
+  box-sizing: border-box;
+}
+
+.gm-booking-widget .widget-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.gm-booking-widget .widget-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.gm-booking-widget .widget-title {
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.gm-booking-widget .form-group {
+  margin-bottom: 16px;
+}
+
+.gm-booking-widget .form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #374151;
+}
+
+.gm-booking-widget .form-input,
+.gm-booking-widget .form-select,
+.gm-booking-widget .form-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.gm-booking-widget .form-input:focus,
+.gm-booking-widget .form-select:focus,
+.gm-booking-widget .form-textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.gm-booking-widget .form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.gm-booking-widget .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.gm-booking-widget .submit-button {
+  background: #007bff;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.gm-booking-widget .submit-button:hover {
+  background: #0056b3;
+}
+
+.gm-booking-widget .submit-button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.gm-booking-widget .loading {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.gm-booking-widget .status-message {
+  padding: 12px;
+  border-radius: 6px;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.gm-booking-widget .status-success {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.gm-booking-widget .status-error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.gm-booking-widget .status-loading {
+  background: #e3f2fd;
+  border: 1px solid #2196f3;
+  color: #1976d2;
+}
+
+/* Dark theme */
+.gm-booking-widget.dark {
+  color: #e5e7eb;
+}
+
+.gm-booking-widget.dark .widget-card {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.gm-booking-widget.dark .widget-title {
+  color: #f9fafb;
+}
+
+.gm-booking-widget.dark .form-label {
+  color: #d1d5db;
+}
+
+.gm-booking-widget.dark .form-input,
+.gm-booking-widget.dark .form-select,
+.gm-booking-widget.dark .form-textarea {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.gm-booking-widget.dark .form-input:focus,
+.gm-booking-widget.dark .form-select:focus,
+.gm-booking-widget.dark .form-textarea:focus {
+  border-color: #007bff;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .gm-booking-widget .widget-card {
+    padding: 16px;
+  }
+  
+  .gm-booking-widget .form-row {
+    grid-template-columns: 1fr;
+  }
+}

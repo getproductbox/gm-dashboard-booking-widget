@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GM Booking Widget</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            background: #f8fafc;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+        p {
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .status {
+            background: #d1fae5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .files {
+            background: #f3f4f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .files h3 {
+            margin-top: 0;
+            color: #1f2937;
+        }
+        .files ul {
+            list-style: none;
+            padding: 0;
+        }
+        .files li {
+            padding: 5px 0;
+            color: #374151;
+        }
+        .files li:before {
+            content: "✅ ";
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 GM Booking Widget</h1>
+        <p>This is the hosting site for the GM Booking Widget. The widget files are available for embedding on marketing websites.</p>
+        
+        <div class="status">
+            <strong>✅ Widget is live and ready for integration!</strong>
+        </div>
+        
+        <div class="files">
+            <h3>Available Files:</h3>
+            <ul>
+                <li><strong>widget.css</strong> - Widget styles and theming</li>
+                <li><strong>gm-booking-widget-standalone.js</strong> - Widget functionality</li>
+                <li><strong>widget-loader.js</strong> - Auto-initialization script</li>
+            </ul>
+        </div>
+        
+        <h3>Integration URL:</h3>
+        <p><code>https://booking-widget.getproductbox.com/</code></p>
+        
+        <h3>Usage Example:</h3>
+        <div style="background: #1f2937; color: #f9fafb; padding: 15px; border-radius: 8px; text-align: left; font-family: monospace; font-size: 14px;">
+            &lt;link rel="stylesheet" href="https://booking-widget.getproductbox.com/widget.css"&gt;<br>
+            &lt;script src="https://booking-widget.getproductbox.com/gm-booking-widget-standalone.js"&gt;&lt;/script&gt;<br><br>
+            &lt;div data-gm-widget="booking" data-venue="manor"&gt;&lt;/div&gt;
+        </div>
+    </div>
+</body>
+</html> 
