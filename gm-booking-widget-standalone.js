@@ -357,21 +357,30 @@
   }
 
   // Also initialize on dynamic content changes
-  if (window.MutationObserver) {
-    const observer = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
-        if (mutation.type === 'childList') {
-          const containers = mutation.target.querySelectorAll('[data-gm-widget="booking"]');
-          if (containers.length > 0) {
-            autoInitWidgets();
+  function setupMutationObserver() {
+    if (window.MutationObserver && document.body) {
+      const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.type === 'childList') {
+            const containers = mutation.target.querySelectorAll('[data-gm-widget="booking"]');
+            if (containers.length > 0) {
+              autoInitWidgets();
+            }
           }
-        }
+        });
       });
-    });
-    
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
+      
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+  }
+
+  // Setup mutation observer when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupMutationObserver);
+  } else {
+    setupMutationObserver();
   }
 })(); 
