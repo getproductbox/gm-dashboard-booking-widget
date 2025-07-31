@@ -253,6 +253,8 @@
 
 .gm-booking-modal-content .form-group {
   margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
 }
 
 .gm-booking-modal-content .form-label {
@@ -275,6 +277,7 @@
   transition: all 0.2s ease;
   background: #ffffff;
   color: #111827;
+  box-sizing: border-box;
 }
 
 .gm-booking-modal-content .form-input:focus,
@@ -314,6 +317,8 @@
   letter-spacing: 0.025em;
   margin: 24px auto 0 auto;
   display: block;
+  grid-column: 1 / -1;
+  justify-self: center;
 }
 
 .gm-booking-modal-content .submit-button:hover {
@@ -467,11 +472,24 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 24px;
+    align-items: start;
+  }
+  
+  .gm-booking-modal-content .form-group {
+    margin-bottom: 20px;
   }
   
   .gm-booking-modal-content .form-group:last-child,
   .gm-booking-modal-content .form-group:nth-last-child(2) {
     grid-column: 1 / -1;
+  }
+
+  /* Ensure submit button is centered */
+  .gm-booking-modal-content .submit-button {
+    grid-column: 1 / -1;
+    justify-self: center;
+    text-align: center;
+    margin-top: 32px;
   }
 }
 
