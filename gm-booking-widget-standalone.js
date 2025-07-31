@@ -48,6 +48,118 @@
     return date.toISOString().split('T')[0];
   }
 
+  // Create modal overlay HTML
+  function createModalOverlay(config) {
+    const themeClass = config.theme === 'dark' ? 'dark' : '';
+    const availableVenues = config.venue === 'both' 
+      ? venueOptions 
+      : venueOptions.filter(v => v.value === config.venue);
+
+    return `
+      <div class="gm-booking-modal-overlay" id="gm-booking-modal">
+        <div class="gm-booking-modal-backdrop"></div>
+        <div class="gm-booking-modal-container">
+          <div class="gm-booking-modal-content ${themeClass}">
+            <div class="modal-header">
+              <h3 class="modal-title">Book Your Venue</h3>
+              <button class="modal-close" onclick="closeBookingModal()">&times;</button>
+            </div>
+            
+            <form id="gm-booking-form" class="widget-form">
+              <!-- Customer Information -->
+              <div class="form-group">
+                <label class="form-label">Customer Name *</label>
+                <input type="text" name="customerName" class="form-input" placeholder="Enter your name" required>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="customerEmail" class="form-input" placeholder="your@email.com">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Phone</label>
+                <input type="tel" name="customerPhone" class="form-input" placeholder="+44 123 456 7890">
+              </div>
+              
+              <!-- Venue Selection -->
+              <div class="form-group">
+                <label class="form-label">Venue *</label>
+                <select name="venue" class="form-select" required>
+                  <option value="">Select venue</option>
+                  ${availableVenues.map(venue => 
+                    `<option value="${venue.value}">${venue.label}</option>`
+                  ).join('')}
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Venue Area *</label>
+                <select name="venueArea" class="form-select" required>
+                  <option value="">Select area</option>
+                  ${venueAreaOptions.map(area => 
+                    `<option value="${area.value}">${area.label}</option>`
+                  ).join('')}
+                </select>
+              </div>
+              
+              <!-- Date and Time -->
+              <div class="form-group">
+                <label class="form-label">Booking Date *</label>
+                <input type="date" name="bookingDate" class="form-input" required>
+              </div>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Start Time</label>
+                  <select name="startTime" class="form-select">
+                    <option value="">Select time</option>
+                    ${timeSlots.map(time => 
+                      `<option value="${time}">${time}</option>`
+                    ).join('')}
+                  </select>
+                </div>
+                
+                <div class="form-group">
+                  <label class="form-label">End Time</label>
+                  <select name="endTime" class="form-select">
+                    <option value="">Select time</option>
+                    ${timeSlots.map(time => 
+                      `<option value="${time}">${time}</option>`
+                    ).join('')}
+                  </select>
+                </div>
+              </div>
+              
+              <!-- Guest Count -->
+              <div class="form-group">
+                <label class="form-label">Number of Guests *</label>
+                <input type="number" name="guestCount" class="form-input" min="1" max="500" placeholder="e.g. 8" required>
+              </div>
+              
+              <!-- Special Requests -->
+              ${config.showSpecialRequests ? `
+                <div class="form-group">
+                  <label class="form-label">Special Requests</label>
+                  <textarea name="specialRequests" class="form-textarea" placeholder="Any special requirements..." rows="3"></textarea>
+                </div>
+              ` : ''}
+              
+              <!-- Submit Button -->
+              <button type="submit" class="submit-button">
+                <span class="button-text">Create Booking</span>
+                <span class="loading-spinner" style="display: none;">⏳</span>
+              </button>
+            </form>
+            
+            <!-- Status Messages -->
+            <div id="widget-status" class="status-container"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   // Create widget HTML
   function createWidgetHTML(config) {
     const themeClass = config.theme === 'dark' ? 'dark' : '';
@@ -310,6 +422,53 @@
     form.addEventListener('submit', (event) => handleSubmit(event, container, config));
   }
 
+  // Initialize modal widget
+  function initModalWidget(config) {
+    // Remove existing modal if present
+    const existingModal = document.getElementById('gm-booking-modal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    // Create modal HTML
+    const modalHTML = createModalOverlay(config);
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    const modal = document.getElementById('gm-booking-modal');
+    const modalContent = modal.querySelector('.gm-booking-modal-content');
+    
+    // Set default date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    modal.querySelector('input[name="bookingDate"]').value = formatDateToISO(tomorrow);
+    
+    // Set default venue area if specified
+    if (config.defaultVenueArea) {
+      modal.querySelector('select[name="venueArea"]').value = config.defaultVenueArea;
+    }
+    
+    // Add form submit handler
+    const form = modal.querySelector('#gm-booking-form');
+    form.addEventListener('submit', (event) => handleSubmit(event, modal, config));
+    
+    // Add backdrop click handler
+    const backdrop = modal.querySelector('.gm-booking-modal-backdrop');
+    backdrop.addEventListener('click', () => closeBookingModal());
+    
+    // Show modal
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  // Close modal function (global)
+  window.closeBookingModal = function() {
+    const modal = document.getElementById('gm-booking-modal');
+    if (modal) {
+      modal.remove();
+      document.body.style.overflow = '';
+    }
+  };
+
   // Global widget function
   window.GMBookingWidget = function(container, config = {}) {
     // Merge with default config
@@ -326,6 +485,24 @@
 
     // Initialize the widget
     initWidget(container, finalConfig);
+  };
+
+  // Modal widget function
+  window.GMBookingModal = function(config = {}) {
+    // Merge with default config
+    const finalConfig = {
+      venue: 'both',
+      defaultVenueArea: 'upstairs',
+      theme: 'light',
+      primaryColor: '#007bff',
+      showSpecialRequests: true,
+      apiEndpoint: window.GMBookingWidgetConfig.apiEndpoint,
+      apiKey: window.GMBookingWidgetConfig.apiKey,
+      ...config
+    };
+
+    // Initialize the modal widget
+    initModalWidget(finalConfig);
   };
 
   // Auto-initialize widgets when DOM is ready
