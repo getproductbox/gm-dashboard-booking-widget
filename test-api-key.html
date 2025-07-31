@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Key Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .result { margin: 10px 0; padding: 10px; background: #f5f5f5; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>API Key Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Current API Key</h2>
+        <button onclick="testCurrentKey()">Test Current Key</button>
+        <div id="current-key-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Service Role Key</h2>
+        <button onclick="testServiceRoleKey()">Test Service Role Key</button>
+        <div id="service-role-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Anon Key</h2>
+        <button onclick="testAnonKey()">Test Anon Key</button>
+        <div id="anon-result" class="result"></div>
+    </div>
+
+    <script>
+        const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3N2YXRqZHlscHVoaml0YmZjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDc2NDkzMywiZXhwIjoyMDY2MzQwOTMzfQ.M4Ikh3gSAVTPDxkMNrXLFxCPjHYqaBC5HcVavpHpNlk';
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3N2YXRqZHlscHVoaml0YmZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NjQ5MzMsImV4cCI6MjA2NjM0MDkzM30.IdM8u1iq88C0ruwp7IkMB7PxwnfwmRyl6uLnBmZq5ys';
+        
+        async function testAPIKey(apiKey, resultId, keyName) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.innerHTML = '<div>Testing...</div>';
+            
+            try {
+                const response = await fetch('https://plksvatjdylpuhjitbfc.supabase.co/functions/v1/venue-config-api', {
+                    headers: {
+                        'x-api-key': apiKey,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log(`${keyName} Response:`, response.status, response.statusText);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `<div class="success">✅ SUCCESS! Status: ${response.status}<br>Data: ${JSON.stringify(data, null, 2)}</div>`;
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.innerHTML = `<div class="error">❌ FAILED! Status: ${response.status}<br>Error: ${errorText}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ ERROR! ${error.message}</div>`;
+            }
+        }
+        
+        function testCurrentKey() {
+            // This is the key currently in the widget
+            const currentKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3N2YXRqZHlscHVoaml0YmZjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDc2NDkzMywiZXhwIjoyMDY2MzQwOTMzfQ.M4Ikh3gSAVTPDxkMNrXLFxCPjHYqaBC5HcVavpHpNlk';
+            testAPIKey(currentKey, 'current-key-result', 'Current Key');
+        }
+        
+        function testServiceRoleKey() {
+            testAPIKey(SERVICE_ROLE_KEY, 'service-role-result', 'Service Role Key');
+        }
+        
+        function testAnonKey() {
+            testAPIKey(ANON_KEY, 'anon-result', 'Anon Key');
+        }
+    </script>
+</body>
+</html> 
