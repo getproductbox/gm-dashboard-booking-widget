@@ -190,8 +190,8 @@
 &lt;button onclick="openBookingModal()"&gt;Book Your Venue&lt;/button&gt;
 
 &lt;script&gt;
-function openBookingModal() {
-  GMBookingModal({
+async function openBookingModal() {
+  await GMBookingModal({
     venue: 'manor',
     theme: 'light',
     defaultVenueArea: 'upstairs'
@@ -222,8 +222,8 @@ function openBookingModal() {
             <h4>3. Dark Theme Modal</h4>
             <div class="code-example">
 &lt;script&gt;
-function openDarkModal() {
-  GMBookingModal({
+async function openDarkModal() {
+  await GMBookingModal({
     venue: 'both',
     theme: 'dark',
     defaultVenueArea: 'full_venue',
@@ -248,24 +248,24 @@ function openDarkModal() {
     
     <script>
         // Modal functions
-        function openModal() {
-            GMBookingModal({
+        async function openModal() {
+            await GMBookingModal({
                 venue: 'manor',
                 theme: 'light',
                 defaultVenueArea: 'upstairs'
             });
         }
         
-        function openModalDark() {
-            GMBookingModal({
+        async function openModalDark() {
+            await GMBookingModal({
                 venue: 'both',
                 theme: 'dark',
                 defaultVenueArea: 'full_venue'
             });
         }
         
-        function openModalLarge() {
-            GMBookingModal({
+        async function openModalLarge() {
+            await GMBookingModal({
                 venue: 'hippie',
                 theme: 'light',
                 defaultVenueArea: 'downstairs',

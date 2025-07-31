@@ -504,3 +504,91 @@
     max-width: 70vw;
   }
 }
+
+/* Pricing Display Styles */
+.pricing-display {
+  margin-top: 24px;
+  padding: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  border-left: 4px solid #3b82f6;
+}
+
+.pricing-info h4 {
+  margin: 0 0 16px 0;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.price-breakdown {
+  margin-bottom: 16px;
+}
+
+.price-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.price-item:last-child {
+  border-bottom: none;
+}
+
+.price-item.total {
+  font-weight: 600;
+  font-size: 16px;
+  color: #1f2937;
+  border-top: 2px solid #3b82f6;
+  padding-top: 12px;
+  margin-top: 8px;
+}
+
+.includes h5 {
+  margin: 0 0 8px 0;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.includes ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.includes li {
+  margin-bottom: 4px;
+}
+
+/* Dark theme pricing */
+.gm-booking-modal-content.dark .pricing-display {
+  background: #1f2937;
+  border-color: #374151;
+  border-left-color: #3b82f6;
+}
+
+.gm-booking-modal-content.dark .pricing-info h4 {
+  color: #f9fafb;
+}
+
+.gm-booking-modal-content.dark .price-item {
+  border-bottom-color: #4b5563;
+}
+
+.gm-booking-modal-content.dark .price-item.total {
+  color: #f9fafb;
+  border-top-color: #3b82f6;
+}
+
+.gm-booking-modal-content.dark .includes h5 {
+  color: #d1d5db;
+}
+
+.gm-booking-modal-content.dark .includes ul {
+  color: #9ca3af;
+}
