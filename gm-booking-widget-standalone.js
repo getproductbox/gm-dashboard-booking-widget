@@ -336,182 +336,156 @@
   }
 
   /**
-   * Creates form HTML for modal insertion
-   * 
-   * IMPORTANT: This generates form HTML that will be inserted directly into
-   * .gm-booking-modal-content. The form uses class="modal-form" and relies on
-   * CSS selectors like ".gm-booking-modal-content .form-row" for 2-column layout.
+   * Creates form HTML for modal insertion (SIMPLIFIED)
    * 
    * @param {Object} config - Widget configuration
    * @returns {string} - Form HTML string
    */
   function createModalFormHTML(config) {
     const isVIPBooking = config.bookingType === 'vip_tickets';
-    
-    // Get available venues from dynamic data
-    let availableVenues = venueConfig || [];
-    
-    if (config.venue !== 'both' && config.venue) {
-      availableVenues = availableVenues.filter(v => v.id === config.venue);
-    }
+    const availableVenues = (venueConfig || []).filter(v => 
+      !config.venue || config.venue === 'both' || v.id === config.venue
+    );
 
-    // VIP Tickets form fields (using direct modal approach that works)
-    if (isVIPBooking) {
-      return `
-        <form id="gm-booking-form" class="gm-booking-modal-form">
-          <div class="form-group">
-            <label class="form-label">Customer Name *</label>
-            <input type="text" name="customerName" class="form-input" placeholder="Enter your name" required>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Email</label>
-              <input type="email" name="customerEmail" class="form-input" placeholder="your@email.com">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Phone</label>
-              <input type="tel" name="customerPhone" class="form-input" placeholder="+44 123 456 7890">
-            </div>
-          </div>
-          
-          ${!config.venue || config.venue === 'both' ? `
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Venue *</label>
-                <select name="venue" class="form-select" required>
-                  <option value="">Select venue</option>
-                  ${availableVenues.map(venue => 
-                    `<option value="${venue.id}">${venue.name}</option>`
-                  ).join('')}
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Booking Date *</label>
-                <input type="date" name="bookingDate" class="form-input vip-date-picker" required>
-              </div>
-            </div>
-          ` : `
-            <div class="form-group">
-              <label class="form-label">Booking Date *</label>
-              <input type="date" name="bookingDate" class="form-input vip-date-picker" required>
-            </div>
-          `}
-          
-          <small style="color: #666; margin-bottom: 24px; display: block;">VIP tickets are only available on Saturdays</small>
-          
-          <div class="form-group">
-            <label class="form-label">Number of Tickets *</label>
-            <input type="number" name="ticketQuantity" class="form-input" min="1" max="100" placeholder="e.g. 4" required>
-          </div>
-          
-          ${config.showSpecialRequests ? `
-            <div class="form-group">
-              <label class="form-label">Special Requests</label>
-              <textarea name="specialRequests" class="form-textarea" placeholder="VIP table request, dietary requirements..." rows="3"></textarea>
-            </div>
-          ` : ''}
-          
-          <button type="submit" class="submit-button vip-style">
-            <span class="button-text">Book VIP Tickets</span>
-            <span class="loading-spinner" style="display: none;">⏳</span>
-          </button>
-          
-          <div id="widget-status" class="status-container"></div>
-        </form>
-      `;
-    }
-
-    // Venue Hire form fields (using direct modal approach that works)
     return `
       <form id="gm-booking-form" class="gm-booking-modal-form">
+        ${generateCustomerFields()}
+        ${generateBookingFields(config, availableVenues, isVIPBooking)}
+        ${config.showSpecialRequests ? generateSpecialRequestsField(isVIPBooking) : ''}
+        ${generateSubmitButton(isVIPBooking)}
+        <div id="widget-status" class="status-container"></div>
+      </form>
+    `;
+  }
+
+  // Helper functions to reduce duplication
+  function generateCustomerFields() {
+    return `
+      <div class="form-group">
+        <label class="form-label">Customer Name *</label>
+        <input type="text" name="customerName" class="form-input" placeholder="Enter your name" required>
+      </div>
+      
+      <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Customer Name *</label>
-          <input type="text" name="customerName" class="form-input" placeholder="Enter your name" required>
+          <label class="form-label">Email</label>
+          <input type="email" name="customerEmail" class="form-input" placeholder="your@email.com">
         </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Email</label>
-            <input type="email" name="customerEmail" class="form-input" placeholder="your@email.com">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Phone</label>
-            <input type="tel" name="customerPhone" class="form-input" placeholder="+44 123 456 7890">
-          </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input type="tel" name="customerPhone" class="form-input" placeholder="+44 123 456 7890">
         </div>
-        
+      </div>
+    `;
+  }
+
+  function generateBookingFields(config, availableVenues, isVIPBooking) {
+    if (isVIPBooking) {
+      return `
         ${!config.venue || config.venue === 'both' ? `
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Venue *</label>
               <select name="venue" class="form-select" required>
                 <option value="">Select venue</option>
-                ${availableVenues.map(venue => 
-                  `<option value="${venue.id}">${venue.name}</option>`
-                ).join('')}
+                ${availableVenues.map(venue => `<option value="${venue.id}">${venue.name}</option>`).join('')}
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Venue Area *</label>
-              <select name="venueArea" class="form-select" required>
-                <option value="">Select area</option>
-                <!-- Venue areas will be populated dynamically based on selected venue -->
-              </select>
+              <label class="form-label">Booking Date *</label>
+              <input type="date" name="bookingDate" class="form-input vip-date-picker" required>
             </div>
           </div>
         ` : `
           <div class="form-group">
-            <label class="form-label">Venue Area *</label>
-            <select name="venueArea" class="form-select" required>
-              <option value="">Select area</option>
-              <!-- Venue areas will be populated dynamically based on selected venue -->
-            </select>
+            <label class="form-label">Booking Date *</label>
+            <input type="date" name="bookingDate" class="form-input vip-date-picker" required>
           </div>
         `}
         
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Booking Date *</label>
-            <input type="date" name="bookingDate" class="form-input" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Number of Guests *</label>
-            <input type="number" name="guestCount" class="form-input" min="1" max="500" placeholder="e.g. 8" required>
-          </div>
-        </div>
+        <small style="color: #666; margin-bottom: 24px; display: block;">VIP tickets are only available on Saturdays</small>
         
+        <div class="form-group">
+          <label class="form-label">Number of Tickets *</label>
+          <input type="number" name="ticketQuantity" class="form-input" min="1" max="100" placeholder="e.g. 4" required>
+        </div>
+      `;
+    }
+
+    // Venue hire fields
+    return `
+      ${!config.venue || config.venue === 'both' ? `
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Start Time</label>
-            <select name="startTime" class="form-select">
-              <option value="">Select time</option>
-              <!-- Time slots will be populated dynamically based on selected date, venue, and area -->
+            <label class="form-label">Venue *</label>
+            <select name="venue" class="form-select" required>
+              <option value="">Select venue</option>
+              ${availableVenues.map(venue => `<option value="${venue.id}">${venue.name}</option>`).join('')}
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">End Time</label>
-            <select name="endTime" class="form-select">
-              <option value="">Select time</option>
-              <!-- Time slots will be populated dynamically based on selected date, venue, and area -->
+            <label class="form-label">Venue Area *</label>
+            <select name="venueArea" class="form-select" required>
+              <option value="">Select area</option>
             </select>
           </div>
         </div>
-        
-        ${config.showSpecialRequests ? `
-          <div class="form-group">
-            <label class="form-label">Special Requests</label>
-            <textarea name="specialRequests" class="form-textarea" placeholder="Any special requirements..." rows="3"></textarea>
-          </div>
-        ` : ''}
-        
-        <button type="submit" class="submit-button">
-          <span class="button-text">Create Booking</span>
-          <span class="loading-spinner" style="display: none;">⏳</span>
-        </button>
-        
-        <div id="widget-status" class="status-container"></div>
-      </form>
+      ` : `
+        <div class="form-group">
+          <label class="form-label">Venue Area *</label>
+          <select name="venueArea" class="form-select" required>
+            <option value="">Select area</option>
+          </select>
+        </div>
+      `}
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Booking Date *</label>
+          <input type="date" name="bookingDate" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Number of Guests *</label>
+          <input type="number" name="guestCount" class="form-input" min="1" max="500" placeholder="e.g. 8" required>
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Start Time</label>
+          <select name="startTime" class="form-select">
+            <option value="">Select time</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Time</label>
+          <select name="endTime" class="form-select">
+            <option value="">Select time</option>
+          </select>
+        </div>
+      </div>
+    `;
+  }
+
+  function generateSpecialRequestsField(isVIPBooking) {
+    const placeholder = isVIPBooking ? "VIP table request, dietary requirements..." : "Any special requirements...";
+    return `
+      <div class="form-group">
+        <label class="form-label">Special Requests</label>
+        <textarea name="specialRequests" class="form-textarea" placeholder="${placeholder}" rows="3"></textarea>
+      </div>
+    `;
+  }
+
+  function generateSubmitButton(isVIPBooking) {
+    const buttonClass = isVIPBooking ? "submit-button vip-style" : "submit-button";
+    const buttonText = isVIPBooking ? "Book VIP Tickets" : "Create Booking";
+    
+    return `
+      <button type="submit" class="${buttonClass}">
+        <span class="button-text">${buttonText}</span>
+        <span class="loading-spinner" style="display: none;">⏳</span>
+      </button>
     `;
   }
 
