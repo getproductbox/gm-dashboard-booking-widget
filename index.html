@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MANOR - Book Your Venue</title>
+    <title>MANOR - Book Your Venue & VIP Tickets</title>
     <style>
         * {
             margin: 0;
@@ -73,6 +73,13 @@
             margin-right: auto;
         }
         
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
         .cta-button {
             background: #ff6b35;
             color: white;
@@ -88,6 +95,17 @@
         
         .cta-button:hover {
             background: #e55a2b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+        }
+        
+        .cta-button.vip {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+            border: 2px solid #ff6b35;
+        }
+        
+        .cta-button.vip:hover {
+            background: linear-gradient(135deg, #e55a2b 0%, #ff6b35 100%);
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
         }
@@ -134,12 +152,12 @@
             line-height: 1.6;
         }
         
-        .venue-section {
+        .booking-section {
             padding: 80px 20px;
             background: #0a0a0a;
         }
         
-        .venue-container {
+        .booking-container {
             max-width: 1200px;
             margin: 0 auto;
             display: grid;
@@ -147,16 +165,20 @@
             gap: 40px;
         }
         
-        .venue-card {
+        .booking-card {
             background: #1a1a1a;
             border-radius: 12px;
             overflow: hidden;
             border: 1px solid #333;
+            transition: transform 0.3s ease;
         }
         
-        .venue-image {
+        .booking-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .booking-image {
             height: 200px;
-            background: linear-gradient(45deg, #ff6b35, #ff8c42);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -165,23 +187,38 @@
             font-weight: 700;
         }
         
-        .venue-content {
+        .booking-image.venue {
+            background: linear-gradient(45deg, #ff6b35, #ff8c42);
+        }
+        
+        .booking-image.vip {
+            background: linear-gradient(45deg, #ff6b35, #ff8c42, #ff6b35);
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .booking-content {
             padding: 30px;
         }
         
-        .venue-title {
+        .booking-title {
             color: #ff6b35;
             font-size: 1.5rem;
             margin-bottom: 15px;
         }
         
-        .venue-description {
+        .booking-description {
             color: #ccc;
             margin-bottom: 20px;
             line-height: 1.6;
         }
         
-        .venue-button {
+        .booking-button {
             background: transparent;
             color: #ff6b35;
             border: 2px solid #ff6b35;
@@ -191,9 +228,22 @@
             transition: all 0.3s ease;
         }
         
-        .venue-button:hover {
+        .booking-button:hover {
             background: #ff6b35;
             color: white;
+        }
+        
+        .vip-highlight {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+            display: inline-block;
         }
         
         @media (max-width: 768px) {
@@ -205,11 +255,16 @@
                 font-size: 3rem;
             }
             
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
             .features-container {
                 grid-template-columns: 1fr;
             }
             
-            .venue-container {
+            .booking-container {
                 grid-template-columns: 1fr;
             }
         }
@@ -223,14 +278,19 @@
     <section class="hero">
         <div class="hero-content">
             <div class="logo">MANOR</div>
-            <h1 class="hero-title">Experience Luxury Events</h1>
+            <h1 class="hero-title">Experience Luxury Events & VIP Nights</h1>
             <p class="hero-subtitle">
                 Discover our stunning venues perfect for your next event. From intimate gatherings to grand celebrations, 
-                we provide the perfect backdrop for unforgettable moments.
+                we provide the perfect backdrop for unforgettable moments. Plus, join us for exclusive VIP Saturday nights!
             </p>
-            <button class="cta-button" onclick="openBookingModal()">
-                Book Your Venue Now
-            </button>
+            <div class="cta-buttons">
+                <button class="cta-button" onclick="openVenueBookingModal()">
+                    Book Your Venue
+                </button>
+                <button class="cta-button vip" onclick="openVIPBookingModal()">
+                    Book VIP Tickets
+                </button>
+            </div>
         </div>
     </section>
     
@@ -248,8 +308,41 @@
             </div>
             <div class="feature">
                 <div class="feature-icon">🌟</div>
-                <h3>Premium Service</h3>
-                <p>Our dedicated team ensures every detail is perfect, from planning to execution.</p>
+                <h3>VIP Experience</h3>
+                <p>Exclusive Saturday night VIP tickets with premium service, dedicated tables, and unforgettable entertainment.</p>
+            </div>
+        </div>
+    </section>
+    
+    <section class="booking-section">
+        <div class="booking-container">
+            <div class="booking-card">
+                <div class="booking-image venue">VENUE HIRE</div>
+                <div class="booking-content">
+                    <h3 class="booking-title">Venue Hire</h3>
+                    <p class="booking-description">
+                        Perfect for corporate events, weddings, and special celebrations. Choose from our elegant Manor or 
+                        vibrant Hippie venue with flexible areas and professional service.
+                    </p>
+                    <button class="booking-button" onclick="openVenueBookingModal()">
+                        Book Venue
+                    </button>
+                </div>
+            </div>
+            
+            <div class="booking-card">
+                <div class="booking-image vip">VIP TICKETS</div>
+                <div class="booking-content">
+                    <div class="vip-highlight">Saturday Nights Only</div>
+                    <h3 class="booking-title">VIP Tickets</h3>
+                    <p class="booking-description">
+                        Experience our exclusive VIP Saturday nights with premium service, dedicated tables, 
+                        and unforgettable entertainment. Limited availability for the ultimate night out.
+                    </p>
+                    <button class="booking-button" onclick="openVIPBookingModal()">
+                        Book VIP Tickets
+                    </button>
+                </div>
             </div>
         </div>
     </section>
@@ -287,11 +380,12 @@
     </section>
     
     <script>
-        // Modal functions for different venues
-        function openBookingModal() {
+        // Venue Hire Modal Functions
+        function openVenueBookingModal() {
             GMBookingModal({
                 venue: 'both',
                 theme: 'light',
+                bookingType: 'venue_hire',
                 defaultVenueArea: 'upstairs',
                 showSpecialRequests: true
             });
@@ -301,6 +395,7 @@
             GMBookingModal({
                 venue: 'manor',
                 theme: 'light',
+                bookingType: 'venue_hire',
                 defaultVenueArea: 'upstairs',
                 showSpecialRequests: true
             });
@@ -310,7 +405,41 @@
             GMBookingModal({
                 venue: 'hippie',
                 theme: 'light',
+                bookingType: 'venue_hire',
                 defaultVenueArea: 'downstairs',
+                showSpecialRequests: true
+            });
+        }
+        
+        // VIP Ticket Modal Functions
+        function openVIPBookingModal() {
+            GMBookingModal({
+                venue: 'both',
+                theme: 'light',
+                bookingType: 'vip_tickets',
+                showSpecialRequests: true
+            });
+        }
+        
+        // Pre-configured VIP booking examples
+        function openManorVIPModal() {
+            GMBookingModal({
+                preConfig: {
+                    venue: 'manor',
+                    bookingType: 'vip_tickets'
+                },
+                theme: 'light',
+                showSpecialRequests: true
+            });
+        }
+        
+        function openHippieVIPModal() {
+            GMBookingModal({
+                preConfig: {
+                    venue: 'hippie',
+                    bookingType: 'vip_tickets'
+                },
+                theme: 'light',
                 showSpecialRequests: true
             });
         }

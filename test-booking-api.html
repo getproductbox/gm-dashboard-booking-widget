@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 3px; white-space: pre-wrap; }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <h1>Booking API Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Booking Submission</h2>
+        <button onclick="testBookingSubmission()">Test Booking Submission</button>
+        <div id="booking-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Different Endpoints</h2>
+        <button onclick="testEndpoint('public-booking-api-v2')">Test public-booking-api-v2</button>
+        <button onclick="testEndpoint('public-booking-api')">Test public-booking-api</button>
+        <button onclick="testEndpoint('booking-api')">Test booking-api</button>
+        <div id="endpoint-result" class="result"></div>
+    </div>
+
+    <script>
+        const API_CONFIG = {
+            baseUrl: 'https://plksvatjdylpuhjitbfc.supabase.co/functions/v1',
+            apiKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3N2YXRqZHlscHVoaml0YmZjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDc2NDkzMywiZXhwIjoyMDY2MzQwOTMzfQ.M4Ikh3gSAVTPDxkMNrXLFxCPjHYqaBC5HcVavpHpNlk'
+        };
+
+        async function testBookingSubmission() {
+            const resultDiv = document.getElementById('booking-result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            const testBookingData = {
+                customerName: 'Test User',
+                customerEmail: 'test@example.com',
+                customerPhone: '1234567890',
+                venue: 'manor',
+                venueArea: 'upstairs',
+                bookingDate: '2025-08-01',
+                startTime: '09:00',
+                endTime: '11:00',
+                guestCount: 10,
+                specialRequests: 'Test booking from widget'
+            };
+
+            try {
+                const response = await fetch(`${API_CONFIG.baseUrl}/public-booking-api-v2`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': API_CONFIG.apiKey
+                    },
+                    body: JSON.stringify(testBookingData)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ Success! Status: ${response.status}\n\nResponse: ${JSON.stringify(result, null, 2)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Error! Status: ${response.status}\n\nResponse: ${JSON.stringify(result, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testEndpoint(endpoint) {
+            const resultDiv = document.getElementById('endpoint-result');
+            resultDiv.innerHTML = `Testing ${endpoint}...`;
+            
+            const testData = {
+                customerName: 'Test User',
+                venue: 'manor',
+                venueArea: 'upstairs',
+                bookingDate: '2025-08-01',
+                guestCount: 10
+            };
+
+            try {
+                const response = await fetch(`${API_CONFIG.baseUrl}/${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': API_CONFIG.apiKey
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">✅ ${endpoint} - Success! Status: ${response.status}\n\nResponse: ${JSON.stringify(result, null, 2)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ ${endpoint} - Error! Status: ${response.status}\n\nResponse: ${JSON.stringify(result, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ ${endpoint} - Network Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html> 

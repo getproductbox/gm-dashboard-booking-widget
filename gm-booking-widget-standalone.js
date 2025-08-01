@@ -42,6 +42,20 @@
     return date.toISOString().split('T')[0];
   }
 
+  // Check if date is a Saturday
+  function isSaturday(date) {
+    return date.getDay() === 6;
+  }
+
+  // Get next Saturday
+  function getNextSaturday() {
+    const today = new Date();
+    const daysUntilSaturday = (6 - today.getDay() + 7) % 7;
+    const nextSaturday = new Date(today);
+    nextSaturday.setDate(today.getDate() + daysUntilSaturday);
+    return nextSaturday;
+  }
+
   // API Integration Functions
   async function fetchVenueConfig(venueFilter = null) {
     try {
@@ -100,13 +114,21 @@
   async function fetchPricing(venue, venueArea, date, guests, duration = 4) {
     try {
       const config = window.GMBookingWidgetConfig;
-      const url = `${config.apiEndpoint}/pricing-api?venue=${venue}&venue_area=${venueArea}&date=${date}&guests=${guests}&duration=${duration}`;
-
+      const url = `${config.apiEndpoint}/pricing-api`;
+      
       const response = await fetch(url, {
+        method: 'POST',
         headers: {
-          'x-api-key': config.apiKey,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.apiKey}`
+        },
+        body: JSON.stringify({
+          venue,
+          venueArea,
+          date,
+          guests,
+          duration
+        })
       });
 
       if (!response.ok) {
@@ -114,55 +136,24 @@
       }
 
       const data = await response.json();
-      
-      // Return the pricing data directly (no nested structure)
-      pricingData = data;
-      const cacheKey = `${venue}-${venueArea}-${date}-${guests}-${duration}`;
-      dataCache.pricing[cacheKey] = data;
       return data;
     } catch (error) {
       console.error('Failed to fetch pricing:', error);
-      // Return fallback pricing
-      return {
-        venue: venue,
-        venue_area: venueArea,
-        date: date,
-        guest_count: guests,
-        duration_hours: duration,
-        base_price: 500.00,
-        per_guest_surcharge: 25.00,
-        total_price: 500 + (guests * 25),
-        currency: "GBP",
-        includes: ["Basic setup", "Staff support", "Sound system"],
-        addons: [
-          {
-            id: "catering",
-            name: "Catering Service",
-            price: 200.00,
-            description: "Professional catering for your event"
-          },
-          {
-            id: "dj",
-            name: "DJ Service",
-            price: 150.00,
-            description: "Professional DJ for entertainment"
-          }
-        ]
-      };
+      return null;
     }
   }
 
   async function fetchKaraokeBooths(venue, availableOnly = true) {
     try {
       const config = window.GMBookingWidgetConfig;
-      let url = `${config.apiEndpoint}/karaoke-booths-api?available=${availableOnly}`;
-      if (venue) {
-        url += `&venue=${venue}`;
+      let url = `${config.apiEndpoint}/karaoke-booths-api?venue=${venue}`;
+      if (availableOnly) {
+        url += '&available=true';
       }
 
       const response = await fetch(url, {
         headers: {
-          'x-api-key': config.apiKey,
+          'Authorization': `Bearer ${config.apiKey}`,
           'Content-Type': 'application/json'
         }
       });
@@ -172,11 +163,7 @@
       }
 
       const data = await response.json();
-      
-      const booths = data.booths || [];
-      karaokeBooths = booths;
-      dataCache.karaokeBooths[venue] = booths;
-      return booths;
+      return data.booths || [];
     } catch (error) {
       console.error('Failed to fetch karaoke booths:', error);
       return [];
@@ -184,181 +171,171 @@
   }
 
   function isCacheValid() {
-    return dataCache.lastUpdated && 
-           (Date.now() - dataCache.lastUpdated) < CACHE_DURATION;
+    return dataCache.lastUpdated && (Date.now() - dataCache.lastUpdated) < CACHE_DURATION;
   }
 
   async function initializeWidgetData() {
-    try {
-      if (!isCacheValid()) {
-        await fetchVenueConfig();
-      } else {
-        venueConfig = dataCache.venueConfig;
-      }
-    } catch (error) {
-      console.error('Failed to initialize widget data:', error);
+    if (!isCacheValid()) {
+      await fetchVenueConfig();
     }
   }
 
-  // Dynamic form population functions
-  function populateVenueAreas(venueId) {
-    const venueAreaSelect = document.querySelector('select[name="venueArea"]');
-    if (!venueAreaSelect || !venueConfig) {
-      console.log('Cannot populate venue areas:', { venueAreaSelect: !!venueAreaSelect, venueConfig: !!venueConfig });
-      return;
-    }
+  function populateVenueAreas(venueId, container = document) {
+    const venueAreaSelect = container.querySelector('select[name="venueArea"]');
+    if (!venueAreaSelect) return;
 
-    console.log('Populating venue areas for venue ID:', venueId);
-    console.log('Available venue config:', venueConfig);
-
-    // Clear existing options
-    venueAreaSelect.innerHTML = '<option value="">Select area</option>';
-
-    // Find the selected venue
     const selectedVenue = venueConfig.find(v => v.id === venueId);
-    console.log('Selected venue:', selectedVenue);
-    
-    if (selectedVenue && selectedVenue.areas) {
-      console.log('Found areas for venue:', selectedVenue.areas);
-      selectedVenue.areas.forEach(area => {
-        const option = document.createElement('option');
-        option.value = area.id;
-        option.textContent = area.name;
-        venueAreaSelect.appendChild(option);
-        console.log('Added venue area option:', area.name);
-      });
-    } else {
-      console.log('No areas found for venue:', venueId);
-    }
+    if (!selectedVenue) return;
+
+    venueAreaSelect.innerHTML = '<option value="">Select area</option>';
+    selectedVenue.areas.forEach(area => {
+      const option = document.createElement('option');
+      option.value = area.id;
+      option.textContent = `${area.name} (${area.capacity} guests)`;
+      venueAreaSelect.appendChild(option);
+    });
   }
 
-  function populateTimeOptions() {
-    const startTimeSelect = document.querySelector('select[name="startTime"]');
-    const endTimeSelect = document.querySelector('select[name="endTime"]');
+  function populateTimeOptions(container = document) {
+    const startTimeSelect = container.querySelector('select[name="startTime"]');
+    const endTimeSelect = container.querySelector('select[name="endTime"]');
     
-    if (!startTimeSelect || !endTimeSelect) {
-      console.log('Cannot populate time options - missing select elements');
-      return;
+    if (!startTimeSelect || !endTimeSelect) return;
+
+    // Generate time slots from 10:00 to 02:00 (next day)
+    const timeSlots = [];
+    for (let hour = 10; hour <= 23; hour++) {
+      timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
+      timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
     }
+    timeSlots.push('00:00', '00:30', '01:00', '01:30', '02:00');
 
-    console.log('Populating time options for venue booking');
-
-    // Clear existing options
+    // Populate start time options
     startTimeSelect.innerHTML = '<option value="">Select start time</option>';
-    endTimeSelect.innerHTML = '<option value="">Select end time</option>';
-
-    // Generate time options from 9 AM to 11 PM (30-minute intervals)
-    const timeOptions = [];
-    for (let hour = 9; hour < 23; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        timeOptions.push(time);
-      }
-    }
-
-    // Add time options to both dropdowns
-    timeOptions.forEach(time => {
-      // Add to start time options
-      const startOption = document.createElement('option');
-      startOption.value = time;
-      startOption.textContent = time;
-      startTimeSelect.appendChild(startOption);
-
-      // Add to end time options
-      const endOption = document.createElement('option');
-      endOption.value = time;
-      endOption.textContent = time;
-      endTimeSelect.appendChild(endOption);
+    timeSlots.forEach(time => {
+      const option = document.createElement('option');
+      option.value = time;
+      option.textContent = time;
+      startTimeSelect.appendChild(option);
     });
 
-    console.log('Added time options:', timeOptions.length, 'time slots');
+    // Populate end time options
+    endTimeSelect.innerHTML = '<option value="">Select end time</option>';
+    timeSlots.forEach(time => {
+      const option = document.createElement('option');
+      option.value = time;
+      option.textContent = time;
+      endTimeSelect.appendChild(option);
+    });
   }
 
-  async function updatePricingDisplay(venue, venueArea, date, guests, duration = 4) {
-    try {
-      const pricing = await fetchPricing(venue, venueArea, date, guests, duration);
-      
-      // Create or update pricing display
-      let pricingDisplay = document.getElementById('pricing-display');
-      if (!pricingDisplay) {
-        pricingDisplay = document.createElement('div');
-        pricingDisplay.id = 'pricing-display';
-        pricingDisplay.className = 'pricing-display';
-        document.querySelector('.widget-form').insertBefore(
-          pricingDisplay, 
-          document.querySelector('.submit-button')
-        );
-      }
+  async function updatePricingDisplay(venue, venueArea, date, guests, duration = 4, container = document) {
+    const pricingContainer = container.querySelector('.pricing-display');
+    if (!pricingContainer) return;
 
-      pricingDisplay.innerHTML = `
-        <div class="pricing-info">
-          <h4>Pricing Information</h4>
-          <div class="price-breakdown">
-            <div class="price-item">
-              <span>Base Price:</span>
-              <span>£${pricing.base_price}</span>
-            </div>
-            <div class="price-item">
-              <span>Guest Surcharge (${guests} guests):</span>
-              <span>£${pricing.per_guest_surcharge * guests}</span>
-            </div>
-            <div class="price-item total">
-              <span>Total:</span>
-              <span>£${pricing.total_price}</span>
-            </div>
+    const pricing = await fetchPricing(venue, venueArea, date, guests, duration);
+    if (!pricing) {
+      pricingContainer.style.display = 'none';
+      return;
+    }
+
+    pricingContainer.style.display = 'block';
+    pricingContainer.innerHTML = `
+      <div class="pricing-info">
+        <h4>Pricing Estimate</h4>
+        <div class="price-breakdown">
+          <div class="price-item">
+            <span>Venue Hire (${duration} hours)</span>
+            <span>£${pricing.basePrice}</span>
           </div>
-          <div class="includes">
-            <h5>Includes:</h5>
-            <ul>
-              ${pricing.includes.map(item => `<li>${item}</li>`).join('')}
-            </ul>
+          ${pricing.additionalFees ? pricing.additionalFees.map(fee => `
+            <div class="price-item">
+              <span>${fee.name}</span>
+              <span>£${fee.amount}</span>
+            </div>
+          `).join('') : ''}
+          <div class="price-item total">
+            <span>Total</span>
+            <span>£${pricing.totalPrice}</span>
           </div>
         </div>
-      `;
-    } catch (error) {
-      console.error('Failed to update pricing display:', error);
-    }
+        <div class="includes">
+          <h5>Includes:</h5>
+          <ul>
+            <li>Venue access for ${duration} hours</li>
+            <li>Basic setup and cleanup</li>
+            <li>Security deposit (refundable)</li>
+          </ul>
+        </div>
+      </div>
+    `;
   }
 
-  // Create modal overlay HTML
   function createModalOverlay(config) {
-    const themeClass = config.theme === 'dark' ? 'dark' : '';
+    // Remove existing modal if present
+    const existingModal = document.getElementById('gm-booking-modal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    const modalHTML = `
+      <div id="gm-booking-modal" class="gm-booking-modal-overlay">
+        <div class="gm-booking-modal-backdrop"></div>
+        <div class="gm-booking-modal-container">
+          <div class="gm-booking-modal-content ${config.theme === 'dark' ? 'dark' : ''} ${config.bookingType === 'vip_tickets' ? 'vip-modal' : ''}">
+            <div class="modal-header">
+              <h2 class="modal-title">${config.bookingType === 'vip_tickets' ? 'Book VIP Tickets' : 'Book Your Venue'}</h2>
+              <button class="modal-close" onclick="closeBookingModal()">&times;</button>
+            </div>
+            <div class="widget-form">
+              <!-- Form content will be populated by createWidgetHTML -->
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Add backdrop click handler
+    const backdrop = document.querySelector('.gm-booking-modal-backdrop');
+    backdrop.addEventListener('click', closeBookingModal);
+
+    return document.getElementById('gm-booking-modal');
+  }
+
+  function createModalFormHTML(config) {
+    const isVIPBooking = config.bookingType === 'vip_tickets';
     
     // Get available venues from dynamic data
     let availableVenues = venueConfig || [];
     
-    if (config.venue !== 'both') {
+    if (config.venue !== 'both' && config.venue) {
       availableVenues = availableVenues.filter(v => v.id === config.venue);
     }
 
-    return `
-      <div class="gm-booking-modal-overlay" id="gm-booking-modal">
-        <div class="gm-booking-modal-backdrop"></div>
-        <div class="gm-booking-modal-container">
-          <div class="gm-booking-modal-content ${themeClass}">
-            <div class="modal-header">
-              <h3 class="modal-title">Book Your Venue</h3>
-              <button class="modal-close" onclick="closeBookingModal()">&times;</button>
+    // VIP Tickets form fields (using direct modal approach that works)
+    if (isVIPBooking) {
+      return `
+        <form id="gm-booking-form" class="direct-modal-form">
+          <div class="form-group">
+            <label class="form-label">Customer Name *</label>
+            <input type="text" name="customerName" class="form-input" placeholder="Enter your name" required>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" name="customerEmail" class="form-input" placeholder="your@email.com">
             </div>
-            
-            <form id="gm-booking-form" class="widget-form">
-              <!-- Customer Information -->
-              <div class="form-group">
-                <label class="form-label">Customer Name *</label>
-                <input type="text" name="customerName" class="form-input" placeholder="Enter your name" required>
-              </div>
-              
-              <div class="form-group">
-                <label class="form-label">Email</label>
-                <input type="email" name="customerEmail" class="form-input" placeholder="your@email.com">
-              </div>
-              
-              <div class="form-group">
-                <label class="form-label">Phone</label>
-                <input type="tel" name="customerPhone" class="form-input" placeholder="+44 123 456 7890">
-              </div>
-              
-              <!-- Venue Selection -->
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input type="tel" name="customerPhone" class="form-input" placeholder="+44 123 456 7890">
+            </div>
+          </div>
+          
+          ${!config.venue || config.venue === 'both' ? `
+            <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Venue *</label>
                 <select name="venue" class="form-select" required>
@@ -368,56 +345,212 @@
                   ).join('')}
                 </select>
               </div>
-              
-              <div class="form-group">
-                <label class="form-label">Venue Area *</label>
-                <select name="venueArea" class="form-select" required>
-                  <option value="">Select area</option>
-                  <!-- Venue areas will be populated dynamically based on selected venue -->
-                </select>
-              </div>
-              
-              <!-- Date and Time -->
               <div class="form-group">
                 <label class="form-label">Booking Date *</label>
-                <input type="date" name="bookingDate" class="form-input" required>
+                <input type="date" name="bookingDate" class="form-input vip-date-picker" required>
+              </div>
+            </div>
+          ` : `
+            <div class="form-group">
+              <label class="form-label">Booking Date *</label>
+              <input type="date" name="bookingDate" class="form-input vip-date-picker" required>
+            </div>
+          `}
+          
+          <small style="color: #666; margin-bottom: 24px; display: block;">VIP tickets are only available on Saturdays</small>
+          
+          <div class="form-group">
+            <label class="form-label">Number of Tickets *</label>
+            <input type="number" name="ticketQuantity" class="form-input" min="1" max="100" placeholder="e.g. 4" required>
+          </div>
+          
+          ${config.showSpecialRequests ? `
+            <div class="form-group">
+              <label class="form-label">Special Requests</label>
+              <textarea name="specialRequests" class="form-textarea" placeholder="VIP table request, dietary requirements..." rows="3"></textarea>
+            </div>
+          ` : ''}
+          
+          <button type="submit" class="submit-button">
+            <span class="button-text">Book VIP Tickets</span>
+            <span class="loading-spinner" style="display: none;">⏳</span>
+          </button>
+          
+          <div id="widget-status" class="status-container"></div>
+        </form>
+      `;
+    }
+
+    // Venue Hire form fields (using direct modal approach that works)
+    return `
+      <form id="gm-booking-form" class="direct-modal-form">
+        <div class="form-group">
+          <label class="form-label">Customer Name *</label>
+          <input type="text" name="customerName" class="form-input" placeholder="Enter your name" required>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" name="customerEmail" class="form-input" placeholder="your@email.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="tel" name="customerPhone" class="form-input" placeholder="+44 123 456 7890">
+          </div>
+        </div>
+        
+        ${!config.venue || config.venue === 'both' ? `
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Venue *</label>
+              <select name="venue" class="form-select" required>
+                <option value="">Select venue</option>
+                ${availableVenues.map(venue => 
+                  `<option value="${venue.id}">${venue.name}</option>`
+                ).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Venue Area *</label>
+              <select name="venueArea" class="form-select" required>
+                <option value="">Select area</option>
+                <!-- Venue areas will be populated dynamically based on selected venue -->
+              </select>
+            </div>
+          </div>
+        ` : `
+          <div class="form-group">
+            <label class="form-label">Venue Area *</label>
+            <select name="venueArea" class="form-select" required>
+              <option value="">Select area</option>
+              <!-- Venue areas will be populated dynamically based on selected venue -->
+            </select>
+          </div>
+        `}
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Booking Date *</label>
+            <input type="date" name="bookingDate" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Number of Guests *</label>
+            <input type="number" name="guestCount" class="form-input" min="1" max="500" placeholder="e.g. 8" required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Start Time</label>
+            <select name="startTime" class="form-select">
+              <option value="">Select time</option>
+              <!-- Time slots will be populated dynamically based on selected date, venue, and area -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">End Time</label>
+            <select name="endTime" class="form-select">
+              <option value="">Select time</option>
+              <!-- Time slots will be populated dynamically based on selected date, venue, and area -->
+            </select>
+          </div>
+        </div>
+        
+        ${config.showSpecialRequests ? `
+          <div class="form-group">
+            <label class="form-label">Special Requests</label>
+            <textarea name="specialRequests" class="form-textarea" placeholder="Any special requirements..." rows="3"></textarea>
+          </div>
+        ` : ''}
+        
+        <button type="submit" class="submit-button">
+          <span class="button-text">Create Booking</span>
+          <span class="loading-spinner" style="display: none;">⏳</span>
+        </button>
+        
+        <div id="widget-status" class="status-container"></div>
+      </form>
+    `;
+  }
+
+  function createWidgetHTML(config) {
+    const themeClass = config.theme === 'dark' ? 'dark' : '';
+    const isVIPBooking = config.bookingType === 'vip_tickets';
+    
+    // Get available venues from dynamic data
+    let availableVenues = venueConfig || [];
+    
+    if (config.venue !== 'both' && config.venue) {
+      availableVenues = availableVenues.filter(v => v.id === config.venue);
+    }
+
+    // VIP Tickets form fields
+    if (isVIPBooking) {
+      return `
+        <div class="gm-booking-widget ${themeClass}">
+          <div class="widget-card">
+            <div class="widget-header">
+              <h3 class="widget-title">Book VIP Tickets</h3>
+              <p style="color: #666; margin-top: 8px; font-size: 14px;">VIP tickets available on Saturdays only</p>
+            </div>
+            
+            <form id="gm-booking-form" class="widget-form">
+              <!-- Customer Information -->
+              <div class="form-group">
+                <label class="form-label">Customer Name *</label>
+                <input type="text" name="customerName" class="form-input" placeholder="Enter your name" required>
               </div>
               
               <div class="form-row">
                 <div class="form-group">
-                  <label class="form-label">Start Time</label>
-                  <select name="startTime" class="form-select">
-                    <option value="">Select time</option>
-                    <!-- Time slots will be populated dynamically based on selected date, venue, and area -->
-                  </select>
+                  <label class="form-label">Email</label>
+                  <input type="email" name="customerEmail" class="form-input" placeholder="your@email.com">
                 </div>
                 
                 <div class="form-group">
-                  <label class="form-label">End Time</label>
-                  <select name="endTime" class="form-select">
-                    <option value="">Select time</option>
-                    <!-- Time slots will be populated dynamically based on selected date, venue, and area -->
-                  </select>
+                  <label class="form-label">Phone</label>
+                  <input type="tel" name="customerPhone" class="form-input" placeholder="+44 123 456 7890">
                 </div>
               </div>
               
-              <!-- Guest Count -->
+              <!-- Venue Selection (if not pre-configured) -->
+              ${!config.venue || config.venue === 'both' ? `
+                <div class="form-group">
+                  <label class="form-label">Venue *</label>
+                  <select name="venue" class="form-select" required>
+                    <option value="">Select venue</option>
+                    ${availableVenues.map(venue => 
+                      `<option value="${venue.id}">${venue.name}</option>`
+                    ).join('')}
+                  </select>
+                </div>
+              ` : ''}
+              
+              <!-- Date Picker for VIP Tickets (Saturdays only) -->
               <div class="form-group">
-                <label class="form-label">Number of Guests *</label>
-                <input type="number" name="guestCount" class="form-input" min="1" max="500" placeholder="e.g. 8" required>
+                <label class="form-label">Booking Date *</label>
+                <input type="date" name="bookingDate" class="form-input vip-date-picker" required>
+                <small style="color: #666; margin-top: 4px; display: block;">VIP tickets are only available on Saturdays</small>
+              </div>
+              
+              <!-- Ticket Quantity -->
+              <div class="form-group">
+                <label class="form-label">Number of Tickets *</label>
+                <input type="number" name="ticketQuantity" class="form-input" min="1" max="100" placeholder="e.g. 4" required>
               </div>
               
               <!-- Special Requests -->
               ${config.showSpecialRequests ? `
                 <div class="form-group">
                   <label class="form-label">Special Requests</label>
-                  <textarea name="specialRequests" class="form-textarea" placeholder="Any special requirements..." rows="3"></textarea>
+                  <textarea name="specialRequests" class="form-textarea" placeholder="VIP table request, dietary requirements..." rows="3"></textarea>
                 </div>
               ` : ''}
               
               <!-- Submit Button -->
               <button type="submit" class="submit-button">
-                <span class="button-text">Create Booking</span>
+                <span class="button-text">Book VIP Tickets</span>
                 <span class="loading-spinner" style="display: none;">⏳</span>
               </button>
             </form>
@@ -426,21 +559,10 @@
             <div id="widget-status" class="status-container"></div>
           </div>
         </div>
-      </div>
-    `;
-  }
-
-  // Create widget HTML
-  function createWidgetHTML(config) {
-    const themeClass = config.theme === 'dark' ? 'dark' : '';
-    
-    // Get available venues from dynamic data
-    let availableVenues = venueConfig || [];
-    
-    if (config.venue !== 'both') {
-      availableVenues = availableVenues.filter(v => v.id === config.venue);
+      `;
     }
 
+    // Venue Hire form fields
     return `
       <div class="gm-booking-widget ${themeClass}">
         <div class="widget-card">
@@ -455,27 +577,32 @@
               <input type="text" name="customerName" class="form-input" placeholder="Enter your name" required>
             </div>
             
-            <div class="form-group">
-              <label class="form-label">Email</label>
-              <input type="email" name="customerEmail" class="form-input" placeholder="your@email.com">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="customerEmail" class="form-input" placeholder="your@email.com">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Phone</label>
+                <input type="tel" name="customerPhone" class="form-input" placeholder="+44 123 456 7890">
+              </div>
             </div>
             
-            <div class="form-group">
-              <label class="form-label">Phone</label>
-              <input type="tel" name="customerPhone" class="form-input" placeholder="+44 123 456 7890">
-            </div>
+            <!-- Venue Selection (if not pre-configured) -->
+            ${!config.venue || config.venue === 'both' ? `
+              <div class="form-group">
+                <label class="form-label">Venue *</label>
+                <select name="venue" class="form-select" required>
+                  <option value="">Select venue</option>
+                  ${availableVenues.map(venue => 
+                    `<option value="${venue.id}">${venue.name}</option>`
+                  ).join('')}
+                </select>
+              </div>
+            ` : ''}
             
-            <!-- Venue Selection -->
-            <div class="form-group">
-              <label class="form-label">Venue *</label>
-              <select name="venue" class="form-select" required>
-                <option value="">Select venue</option>
-                ${availableVenues.map(venue => 
-                  `<option value="${venue.id}">${venue.name}</option>`
-                ).join('')}
-              </select>
-            </div>
-            
+            <!-- Venue Area Selection -->
             <div class="form-group">
               <label class="form-label">Venue Area *</label>
               <select name="venueArea" class="form-select" required>
@@ -537,35 +664,11 @@
   }
 
   // Validate form data
-  function validateForm(formData) {
+  function validateForm(formData, bookingType = 'venue_hire') {
     const errors = {};
 
     if (!formData.customerName || formData.customerName.trim().length === 0) {
       errors.customerName = 'Customer name is required';
-    }
-
-    if (!formData.venue) {
-      errors.venue = 'Please select a venue';
-    }
-
-    if (!formData.venueArea) {
-      errors.venueArea = 'Please select a venue area';
-    }
-
-    if (!formData.bookingDate) {
-      errors.bookingDate = 'Please select a booking date';
-    } else {
-      const bookingDate = new Date(formData.bookingDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (bookingDate < today) {
-        errors.bookingDate = 'Booking date cannot be in the past';
-      }
-    }
-
-    if (!formData.guestCount || formData.guestCount < 1) {
-      errors.guestCount = 'Guest count must be at least 1';
     }
 
     if (!formData.customerEmail && !formData.customerPhone) {
@@ -574,6 +677,56 @@
 
     if (formData.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.customerEmail)) {
       errors.customerEmail = 'Please provide a valid email address';
+    }
+
+    if (bookingType === 'vip_tickets') {
+      // VIP Tickets validation
+      if (!formData.venue) {
+        errors.venue = 'Please select a venue';
+      }
+
+      if (!formData.bookingDate) {
+        errors.bookingDate = 'Please select a booking date';
+      } else {
+        const bookingDate = new Date(formData.bookingDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (bookingDate < today) {
+          errors.bookingDate = 'Booking date cannot be in the past';
+        } else if (!isSaturday(bookingDate)) {
+          errors.bookingDate = 'VIP tickets are only available on Saturdays';
+        }
+      }
+
+      if (!formData.ticketQuantity || formData.ticketQuantity < 1 || formData.ticketQuantity > 100) {
+        errors.ticketQuantity = 'Ticket quantity must be between 1 and 100';
+      }
+    } else {
+      // Venue Hire validation
+      if (!formData.venue) {
+        errors.venue = 'Please select a venue';
+      }
+
+      if (!formData.venueArea) {
+        errors.venueArea = 'Please select a venue area';
+      }
+
+      if (!formData.bookingDate) {
+        errors.bookingDate = 'Please select a booking date';
+      } else {
+        const bookingDate = new Date(formData.bookingDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (bookingDate < today) {
+          errors.bookingDate = 'Booking date cannot be in the past';
+        }
+      }
+
+      if (!formData.guestCount || formData.guestCount < 1) {
+        errors.guestCount = 'Guest count must be at least 1';
+      }
     }
 
     return {
@@ -594,19 +747,26 @@
     
     const form = event.target;
     const formData = new FormData(form);
+    const isVIPBooking = config.bookingType === 'vip_tickets';
     
     const bookingData = {
       customerName: formData.get('customerName'),
       customerEmail: formData.get('customerEmail') || undefined,
       customerPhone: formData.get('customerPhone') || undefined,
-      venue: formData.get('venue'),
-      venueArea: formData.get('venueArea'),
+      bookingType: isVIPBooking ? 'vip_tickets' : 'venue_hire',
+      venue: formData.get('venue') || config.venue,
       bookingDate: formData.get('bookingDate'),
-      startTime: formData.get('startTime') || undefined,
-      endTime: formData.get('endTime') || undefined,
-      guestCount: parseInt(formData.get('guestCount')),
       specialRequests: formData.get('specialRequests') || undefined,
     };
+
+    if (isVIPBooking) {
+      bookingData.ticketQuantity = parseInt(formData.get('ticketQuantity'));
+    } else {
+      bookingData.venueArea = formData.get('venueArea');
+      bookingData.startTime = formData.get('startTime') || undefined;
+      bookingData.endTime = formData.get('endTime') || undefined;
+      bookingData.guestCount = parseInt(formData.get('guestCount'));
+    }
 
     // Remove undefined values
     Object.keys(bookingData).forEach(key => {
@@ -616,7 +776,7 @@
     });
 
     // Validate form
-    const validation = validateForm(bookingData);
+    const validation = validateForm(bookingData, config.bookingType);
     if (!validation.isValid) {
       const errorMessage = Object.values(validation.errors).join(', ');
       showStatus(container, `❌ ${errorMessage}`, 'error');
@@ -633,11 +793,11 @@
     submitButton.disabled = true;
 
     try {
-      const response = await fetch(`${config.apiEndpoint}/public-booking-api-v2`, {
+      const response = await fetch(`${config.apiEndpoint}/public-booking-api`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': config.apiKey
+          'Authorization': `Bearer ${config.apiKey}`
         },
         body: JSON.stringify(bookingData)
       });
@@ -652,10 +812,15 @@
           form.reset();
           showStatus(container, '', '');
           
-          // Set default date to tomorrow
-          const tomorrow = new Date();
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          form.querySelector('input[name="bookingDate"]').value = formatDateToISO(tomorrow);
+          // Set default date based on booking type
+          if (isVIPBooking) {
+            const nextSaturday = getNextSaturday();
+            form.querySelector('input[name="bookingDate"]').value = formatDateToISO(nextSaturday);
+          } else {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            form.querySelector('input[name="bookingDate"]').value = formatDateToISO(tomorrow);
+          }
         }, 3000);
       } else {
         showStatus(container, `❌ ${result.message}`, 'error');
@@ -672,19 +837,25 @@
 
   // Initialize widget
   async function initWidget(container, config) {
-    // Initialize widget data
+    // Initialize widget data first
     await initializeWidgetData();
     
-    // Create widget HTML
+    // Create widget HTML after venue data is loaded
     container.innerHTML = createWidgetHTML(config);
     
-    // Set default date to tomorrow
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    container.querySelector('input[name="bookingDate"]').value = formatDateToISO(tomorrow);
+    // Set default date based on booking type
+    const isVIPBooking = config.bookingType === 'vip_tickets';
+    if (isVIPBooking) {
+      const nextSaturday = getNextSaturday();
+      container.querySelector('input[name="bookingDate"]').value = formatDateToISO(nextSaturday);
+    } else {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      container.querySelector('input[name="bookingDate"]').value = formatDateToISO(tomorrow);
+    }
     
     // Set default venue area if specified
-    if (config.defaultVenueArea) {
+    if (config.defaultVenueArea && !isVIPBooking) {
       container.querySelector('select[name="venueArea"]').value = config.defaultVenueArea;
     }
     
@@ -693,55 +864,78 @@
     form.addEventListener('submit', (event) => handleSubmit(event, container, config));
     
     // Add dynamic form event listeners for inline widget
-    const venueSelect = container.querySelector('select[name="venue"]');
-    const venueAreaSelect = container.querySelector('select[name="venueArea"]');
-    const dateInput = container.querySelector('input[name="bookingDate"]');
-    const guestCountInput = container.querySelector('input[name="guestCount"]');
-    
-    // Venue change handler
-    venueSelect.addEventListener('change', (e) => {
-      const selectedVenue = e.target.value;
-      if (selectedVenue) {
-        populateVenueAreas(selectedVenue);
-        // Clear time options when venue changes
-        const startTimeSelect = container.querySelector('select[name="startTime"]');
-        const endTimeSelect = container.querySelector('select[name="endTime"]');
-        startTimeSelect.innerHTML = '<option value="">Select start time</option>';
-        endTimeSelect.innerHTML = '<option value="">Select end time</option>';
-      }
-    });
-    
-    // Venue area change handler
-    venueAreaSelect.addEventListener('change', (e) => {
-      const selectedVenue = venueSelect.value;
-      const selectedArea = e.target.value;
+    if (!isVIPBooking) {
+      const venueSelect = container.querySelector('select[name="venue"]');
+      const venueAreaSelect = container.querySelector('select[name="venueArea"]');
+      const dateInput = container.querySelector('input[name="bookingDate"]');
+      const guestCountInput = container.querySelector('input[name="guestCount"]');
       
-      if (selectedVenue && selectedArea) {
-        populateTimeOptions();
+      if (venueSelect) {
+        // Venue change handler
+        venueSelect.addEventListener('change', (e) => {
+          const selectedVenue = e.target.value;
+          if (selectedVenue) {
+            populateVenueAreas(selectedVenue, container);
+            // Clear time options when venue changes
+            const startTimeSelect = container.querySelector('select[name="startTime"]');
+            const endTimeSelect = container.querySelector('select[name="endTime"]');
+            if (startTimeSelect) startTimeSelect.innerHTML = '<option value="">Select start time</option>';
+            if (endTimeSelect) endTimeSelect.innerHTML = '<option value="">Select end time</option>';
+          }
+        });
       }
-    });
-    
-    // Date change handler
-    dateInput.addEventListener('change', (e) => {
-      const selectedVenue = venueSelect.value;
-      const selectedArea = venueAreaSelect.value;
       
-      if (selectedVenue && selectedArea) {
-        populateTimeOptions();
+      if (venueAreaSelect) {
+        // Venue area change handler
+        venueAreaSelect.addEventListener('change', (e) => {
+          const selectedVenue = venueSelect ? venueSelect.value : config.venue;
+          const selectedArea = e.target.value;
+          
+          if (selectedVenue && selectedArea) {
+            populateTimeOptions(container);
+          }
+        });
       }
-    });
-    
-    // Guest count change handler for pricing
-    guestCountInput.addEventListener('input', async (e) => {
-      const selectedVenue = venueSelect.value;
-      const selectedArea = venueAreaSelect.value;
-      const selectedDate = dateInput.value;
-      const guestCount = parseInt(e.target.value) || 0;
       
-      if (selectedVenue && selectedArea && selectedDate && guestCount > 0) {
-        await updatePricingDisplay(selectedVenue, selectedArea, selectedDate, guestCount);
+      if (dateInput) {
+        // Date change handler
+        dateInput.addEventListener('change', (e) => {
+          const selectedVenue = venueSelect ? venueSelect.value : config.venue;
+          const selectedArea = venueAreaSelect ? venueAreaSelect.value : config.defaultVenueArea;
+          
+          if (selectedVenue && selectedArea) {
+            populateTimeOptions();
+          }
+        });
       }
-    });
+      
+      if (guestCountInput) {
+        // Guest count change handler for pricing
+        guestCountInput.addEventListener('input', async (e) => {
+          const selectedVenue = venueSelect ? venueSelect.value : config.venue;
+          const selectedArea = venueAreaSelect ? venueAreaSelect.value : config.defaultVenueArea;
+          const selectedDate = dateInput ? dateInput.value : '';
+          const guestCount = parseInt(e.target.value) || 0;
+          
+          if (selectedVenue && selectedArea && selectedDate && guestCount > 0) {
+            await updatePricingDisplay(selectedVenue, selectedArea, selectedDate, guestCount, container);
+          }
+        });
+      }
+    } else {
+      // VIP Tickets specific handlers
+      const dateInput = container.querySelector('input[name="bookingDate"]');
+      if (dateInput) {
+        // Enhanced date picker for VIP tickets
+        dateInput.addEventListener('change', (e) => {
+          const selectedDate = new Date(e.target.value);
+          if (!isSaturday(selectedDate)) {
+            showStatus(container, '❌ VIP tickets are only available on Saturdays', 'error');
+            e.target.value = formatDateToISO(getNextSaturday());
+          }
+        });
+      }
+    }
   }
 
   // Initialize modal widget
@@ -752,188 +946,190 @@
       existingModal.remove();
     }
 
-    // Initialize widget data
+    // Initialize widget data first
     await initializeWidgetData();
-
-    // Create modal HTML
-    const modalHTML = createModalOverlay(config);
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
     
-    const modal = document.getElementById('gm-booking-modal');
-    const modalContent = modal.querySelector('.gm-booking-modal-content');
+    // Create modal overlay
+    const modal = createModalOverlay(config);
     
-    // Set default date to tomorrow
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    modal.querySelector('input[name="bookingDate"]').value = formatDateToISO(tomorrow);
+    // Create widget HTML after venue data is loaded
+    const formContainer = modal.querySelector('.widget-form');
+    formContainer.innerHTML = createModalFormHTML(config);
+    
+    // Set default date based on booking type
+    const isVIPBooking = config.bookingType === 'vip_tickets';
+    if (isVIPBooking) {
+      const nextSaturday = getNextSaturday();
+      formContainer.querySelector('input[name="bookingDate"]').value = formatDateToISO(nextSaturday);
+    } else {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      formContainer.querySelector('input[name="bookingDate"]').value = formatDateToISO(tomorrow);
+    }
     
     // Set default venue area if specified
-    if (config.defaultVenueArea) {
-      modal.querySelector('select[name="venueArea"]').value = config.defaultVenueArea;
+    if (config.defaultVenueArea && !isVIPBooking) {
+      formContainer.querySelector('select[name="venueArea"]').value = config.defaultVenueArea;
     }
     
     // Add form submit handler
-    const form = modal.querySelector('#gm-booking-form');
+    const form = formContainer.querySelector('#gm-booking-form');
     form.addEventListener('submit', (event) => handleSubmit(event, modal, config));
     
-    // Add dynamic form event listeners
-    const venueSelect = modal.querySelector('select[name="venue"]');
-    const venueAreaSelect = modal.querySelector('select[name="venueArea"]');
-    const dateInput = modal.querySelector('input[name="bookingDate"]');
-    const guestCountInput = modal.querySelector('input[name="guestCount"]');
-    
-    // Venue change handler
-    venueSelect.addEventListener('change', (e) => {
-      const selectedVenue = e.target.value;
-      if (selectedVenue) {
-        populateVenueAreas(selectedVenue);
-        // Clear time options when venue changes
-        const startTimeSelect = modal.querySelector('select[name="startTime"]');
-        const endTimeSelect = modal.querySelector('select[name="endTime"]');
-        startTimeSelect.innerHTML = '<option value="">Select start time</option>';
-        endTimeSelect.innerHTML = '<option value="">Select end time</option>';
-      }
-    });
-    
-    // Venue area change handler
-    venueAreaSelect.addEventListener('change', (e) => {
-      const selectedVenue = venueSelect.value;
-      const selectedArea = e.target.value;
+    // Add dynamic form event listeners for modal widget
+    if (!isVIPBooking) {
+      const venueSelect = formContainer.querySelector('select[name="venue"]');
+      const venueAreaSelect = formContainer.querySelector('select[name="venueArea"]');
+      const dateInput = formContainer.querySelector('input[name="bookingDate"]');
+      const guestCountInput = formContainer.querySelector('input[name="guestCount"]');
       
-      if (selectedVenue && selectedArea) {
-        populateTimeOptions();
+      if (venueSelect) {
+        // Venue change handler
+        venueSelect.addEventListener('change', (e) => {
+          const selectedVenue = e.target.value;
+          if (selectedVenue) {
+            populateVenueAreas(selectedVenue, formContainer);
+            // Clear time options when venue changes
+            const startTimeSelect = formContainer.querySelector('select[name="startTime"]');
+            const endTimeSelect = formContainer.querySelector('select[name="endTime"]');
+            if (startTimeSelect) startTimeSelect.innerHTML = '<option value="">Select start time</option>';
+            if (endTimeSelect) endTimeSelect.innerHTML = '<option value="">Select end time</option>';
+          }
+        });
       }
-    });
-    
-    // Date change handler
-    dateInput.addEventListener('change', (e) => {
-      const selectedVenue = venueSelect.value;
-      const selectedArea = venueAreaSelect.value;
       
-      if (selectedVenue && selectedArea) {
-        populateTimeOptions();
+      if (venueAreaSelect) {
+        // Venue area change handler
+        venueAreaSelect.addEventListener('change', (e) => {
+          const selectedVenue = venueSelect ? venueSelect.value : config.venue;
+          const selectedArea = e.target.value;
+          
+          if (selectedVenue && selectedArea) {
+            populateTimeOptions(formContainer);
+          }
+        });
       }
-    });
-    
-    // Guest count change handler for pricing
-    guestCountInput.addEventListener('input', async (e) => {
-      const selectedVenue = venueSelect.value;
-      const selectedArea = venueAreaSelect.value;
-      const selectedDate = dateInput.value;
-      const guestCount = parseInt(e.target.value) || 0;
       
-      if (selectedVenue && selectedArea && selectedDate && guestCount > 0) {
-        await updatePricingDisplay(selectedVenue, selectedArea, selectedDate, guestCount);
+      if (dateInput) {
+        // Date change handler
+        dateInput.addEventListener('change', (e) => {
+          const selectedVenue = venueSelect ? venueSelect.value : config.venue;
+          const selectedArea = venueAreaSelect ? venueAreaSelect.value : config.defaultVenueArea;
+          
+          if (selectedVenue && selectedArea) {
+            populateTimeOptions();
+          }
+        });
       }
-    });
-    
-    // Add backdrop click handler
-    const backdrop = modal.querySelector('.gm-booking-modal-backdrop');
-    backdrop.addEventListener('click', () => closeBookingModal());
+      
+      if (guestCountInput) {
+        // Guest count change handler for pricing
+        guestCountInput.addEventListener('input', async (e) => {
+          const selectedVenue = venueSelect ? venueSelect.value : config.venue;
+          const selectedArea = venueAreaSelect ? venueAreaSelect.value : config.defaultVenueArea;
+          const selectedDate = dateInput ? dateInput.value : '';
+          const guestCount = parseInt(e.target.value) || 0;
+          
+          if (selectedVenue && selectedArea && selectedDate && guestCount > 0) {
+            await updatePricingDisplay(selectedVenue, selectedArea, selectedDate, guestCount, formContainer);
+          }
+        });
+      }
+    } else {
+      // VIP Tickets specific handlers
+      const dateInput = formContainer.querySelector('input[name="bookingDate"]');
+      if (dateInput) {
+        // Enhanced date picker for VIP tickets
+        dateInput.addEventListener('change', (e) => {
+          const selectedDate = new Date(e.target.value);
+          if (!isSaturday(selectedDate)) {
+            showStatus(modal, '❌ VIP tickets are only available on Saturdays', 'error');
+            e.target.value = formatDateToISO(getNextSaturday());
+          }
+        });
+      }
+    }
     
     // Show modal
     modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
   }
 
-  // Close modal function (global)
+  // Global functions for external use
+  window.GMBookingWidget = {
+    init: function(config = {}) {
+      const defaultConfig = {
+        ...window.GMBookingWidgetConfig,
+        ...config
+      };
+      
+      // Handle pre-configuration
+      if (config.preConfig) {
+        defaultConfig.venue = config.preConfig.venue;
+        defaultConfig.bookingType = config.preConfig.bookingType;
+      }
+      
+      return initWidget(document.body, defaultConfig);
+    }
+  };
+
+  window.GMBookingModal = function(config = {}) {
+    const defaultConfig = {
+      ...window.GMBookingWidgetConfig,
+      ...config
+    };
+    
+    // Handle pre-configuration
+    if (config.preConfig) {
+      defaultConfig.venue = config.preConfig.venue;
+      defaultConfig.bookingType = config.preConfig.bookingType;
+    }
+    
+    return initModalWidget(defaultConfig);
+  };
+
   window.closeBookingModal = function() {
     const modal = document.getElementById('gm-booking-modal');
     if (modal) {
       modal.remove();
-      document.body.style.overflow = '';
     }
   };
 
-  // Global widget function
-  window.GMBookingWidget = async function(container, config = {}) {
-    // Merge with default config
-    const finalConfig = {
-      venue: 'both',
-      defaultVenueArea: 'upstairs',
-      theme: 'light',
-      primaryColor: '#007bff',
-      showSpecialRequests: true,
-      apiEndpoint: window.GMBookingWidgetConfig.apiEndpoint,
-      apiKey: window.GMBookingWidgetConfig.apiKey,
-      ...config
-    };
-
-    // Initialize the widget
-    await initWidget(container, finalConfig);
-  };
-
-  // Modal widget function
-  window.GMBookingModal = async function(config = {}) {
-    // Merge with default config
-    const finalConfig = {
-      venue: 'both',
-      defaultVenueArea: 'upstairs',
-      theme: 'light',
-      primaryColor: '#007bff',
-      showSpecialRequests: true,
-      apiEndpoint: window.GMBookingWidgetConfig.apiEndpoint,
-      apiKey: window.GMBookingWidgetConfig.apiKey,
-      ...config
-    };
-
-    // Initialize the modal widget
-    await initModalWidget(finalConfig);
-  };
-
-  // Auto-initialize widgets when DOM is ready
+  // Auto-initialize widgets on page load
   function autoInitWidgets() {
-    const containers = document.querySelectorAll('[data-gm-widget="booking"]');
-    
-    containers.forEach(container => {
-      // Get configuration from data attributes
-      const config = {
-        venue: container.dataset.venue || 'both',
-        defaultVenueArea: container.dataset.venueArea || 'upstairs',
-        theme: container.dataset.theme || 'light',
-        primaryColor: container.dataset.primaryColor || '#007bff',
-        showSpecialRequests: container.dataset.showSpecialRequests !== 'false',
-        apiEndpoint: container.dataset.apiEndpoint || window.GMBookingWidgetConfig.apiEndpoint,
-        apiKey: container.dataset.apiKey || window.GMBookingWidgetConfig.apiKey
-      };
-      
-      // Initialize widget
-      window.GMBookingWidget(container, config);
+    const widgets = document.querySelectorAll('[data-gm-booking-widget]');
+    widgets.forEach(widget => {
+      const config = JSON.parse(widget.getAttribute('data-gm-booking-widget') || '{}');
+      initWidget(widget, config);
+    });
+  }
+
+  // Setup mutation observer for dynamically added widgets
+  function setupMutationObserver() {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === 1 && node.hasAttribute && node.hasAttribute('data-gm-booking-widget')) {
+            const config = JSON.parse(node.getAttribute('data-gm-booking-widget') || '{}');
+            initWidget(node, config);
+          }
+        });
+      });
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
     });
   }
 
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', autoInitWidgets);
+    document.addEventListener('DOMContentLoaded', () => {
+      autoInitWidgets();
+      setupMutationObserver();
+    });
   } else {
     autoInitWidgets();
-  }
-
-  // Also initialize on dynamic content changes
-  function setupMutationObserver() {
-    if (window.MutationObserver && document.body) {
-      const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-          if (mutation.type === 'childList') {
-            const containers = mutation.target.querySelectorAll('[data-gm-widget="booking"]');
-            if (containers.length > 0) {
-              autoInitWidgets();
-            }
-          }
-        });
-      });
-      
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
-    }
-  }
-
-  // Setup mutation observer when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupMutationObserver);
-  } else {
     setupMutationObserver();
   }
 })(); 
