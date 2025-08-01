@@ -92,19 +92,13 @@
       return venues;
     } catch (error) {
       console.error('Failed to fetch venue config:', error);
-      // Return fallback data
-      return [
-        { id: "manor", name: "Manor", areas: [
-          { id: "upstairs", name: "Upstairs", capacity: 50 },
-          { id: "downstairs", name: "Downstairs", capacity: 30 },
-          { id: "full_venue", name: "Full Venue", capacity: 80 }
-        ]},
-        { id: "hippie", name: "Hippie", areas: [
-          { id: "upstairs", name: "Upstairs", capacity: 40 },
-          { id: "downstairs", name: "Downstairs", capacity: 25 },
-          { id: "full_venue", name: "Full Venue", capacity: 65 }
-        ]}
-      ];
+      console.error('API Error Details:', {
+        url: `${window.GMBookingWidgetConfig.apiEndpoint}/venue-config-api`,
+        error: error.message,
+        stack: error.stack
+      });
+      // Return empty array to expose the API issue
+      return [];
     }
   }
 
@@ -176,7 +170,13 @@
 
   async function initializeWidgetData() {
     if (!isCacheValid()) {
-      await fetchVenueConfig();
+      const venues = await fetchVenueConfig();
+      if (!venues || venues.length === 0) {
+        console.error('❌ CRITICAL: No venue data available! Check venue-config-api endpoint.');
+        console.error('🔧 API Endpoint:', `${window.GMBookingWidgetConfig.apiEndpoint}/venue-config-api`);
+        console.error('🔑 API Key configured:', !!window.GMBookingWidgetConfig.apiKey);
+        throw new Error('Failed to load venue configuration. Cannot initialize booking widget.');
+      }
     }
   }
 
@@ -835,10 +835,11 @@
     }
   }
 
-  // Initialize widget
-  async function initWidget(container, config) {
-    // Initialize widget data first
-    await initializeWidgetData();
+    // Initialize widget
+async function initWidget(container, config) {
+    try {
+      // Initialize widget data first
+      await initializeWidgetData();
     
     // Create widget HTML after venue data is loaded
     container.innerHTML = createWidgetHTML(config);
@@ -961,18 +962,29 @@
         });
       }
     }
+  } catch (error) {
+    console.error('Failed to initialize booking widget:', error);
+    container.innerHTML = `
+      <div class="widget-error">
+        <h3>⚠️ Booking System Unavailable</h3>
+        <p>Unable to load venue information. Please try refreshing the page or contact support.</p>
+        <small>Error: ${error.message}</small>
+      </div>
+    `;
   }
+}
 
   // Initialize modal widget
   async function initModalWidget(config) {
-    // Remove existing modal if present
-    const existingModal = document.getElementById('gm-booking-modal');
-    if (existingModal) {
-      existingModal.remove();
-    }
+    try {
+      // Remove existing modal if present
+      const existingModal = document.getElementById('gm-booking-modal');
+      if (existingModal) {
+        existingModal.remove();
+      }
 
-    // Initialize widget data first
-    await initializeWidgetData();
+      // Initialize widget data first
+      await initializeWidgetData();
     
     // Create modal overlay
     const modal = createModalOverlay(config);
@@ -1102,7 +1114,32 @@
     
     // Show modal
     modal.style.display = 'flex';
+  } catch (error) {
+    console.error('Failed to initialize booking modal:', error);
+    
+    // Create error modal
+    const errorModal = document.createElement('div');
+    errorModal.id = 'gm-booking-modal';
+    errorModal.className = 'gm-booking-modal-overlay';
+    errorModal.style.display = 'flex';
+    errorModal.innerHTML = `
+      <div class="gm-booking-modal-backdrop" onclick="this.parentElement.remove()"></div>
+      <div class="gm-booking-modal-container">
+        <div class="gm-booking-modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title">⚠️ Booking System Unavailable</h2>
+            <button class="modal-close" onclick="this.closest('#gm-booking-modal').remove()">&times;</button>
+          </div>
+          <div style="padding: 32px;">
+            <p>Unable to load venue information. Please try refreshing the page or contact support.</p>
+            <small>Error: ${error.message}</small>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(errorModal);
   }
+}
 
   // Global functions for external use
   window.GMBookingWidget = {

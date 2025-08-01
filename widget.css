@@ -781,3 +781,33 @@
   color: #991b1b;
   font-weight: 600;
 }
+
+/* Error state styles */
+.widget-error {
+  background: #fff5f5;
+  border: 2px solid #dc3545;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.widget-error h3 {
+  color: #dc3545;
+  margin: 0 0 12px 0;
+  font-size: 18px;
+}
+
+.widget-error p {
+  color: #6c757d;
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+}
+
+.widget-error small {
+  color: #868e96;
+  font-size: 12px;
+  font-family: monospace;
+  display: block;
+  margin-top: 8px;
+}
