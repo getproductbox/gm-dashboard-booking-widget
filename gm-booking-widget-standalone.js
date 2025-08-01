@@ -424,7 +424,7 @@
 
     // Venue Hire form fields (using direct modal approach that works)
     return `
-      <form id="gm-booking-form" class="direct-modal-form">
+      <form id="gm-booking-form" class="gm-booking-modal-form">
         <div class="form-group">
           <label class="form-label">Customer Name *</label>
           <input type="text" name="customerName" class="form-input" placeholder="Enter your name" required>
