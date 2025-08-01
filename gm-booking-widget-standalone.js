@@ -412,7 +412,7 @@
             </div>
           ` : ''}
           
-          <button type="submit" class="submit-button">
+          <button type="submit" class="submit-button vip-style">
             <span class="button-text">Book VIP Tickets</span>
             <span class="loading-spinner" style="display: none;">⏳</span>
           </button>

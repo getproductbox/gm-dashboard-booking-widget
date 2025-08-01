@@ -179,25 +179,31 @@
 }
 
 .gm-booking-modal-form .form-label {
+  font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: #374151;
+  letter-spacing: 0.025em;
 }
 
 .gm-booking-modal-form .form-input, 
 .gm-booking-modal-form .form-select,
 .gm-booking-modal-form .form-textarea {
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
   font-size: 16px;
   box-sizing: border-box;
+  transition: all 0.2s ease;
+  background: #ffffff;
+  color: #111827;
 }
 
 .gm-booking-modal-form .form-input:focus, 
 .gm-booking-modal-form .form-select:focus,
 .gm-booking-modal-form .form-textarea:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .gm-booking-modal-form .form-textarea {
@@ -206,17 +212,25 @@
 }
 
 .gm-booking-modal-form .submit-button {
-  background: #007bff;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
   border: none;
-  padding: 12px 24px;
-  border-radius: 4px;
+  padding: 16px 32px;
+  border-radius: 12px;
   font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.25);
+  letter-spacing: 0.025em;
+  width: 100%;
+  margin-top: 8px;
 }
 
 .gm-booking-modal-form .submit-button:hover {
-  background: #0056b3;
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.35);
 }
 
 .gm-booking-modal-form .status-container {
@@ -225,6 +239,17 @@
 
 .gm-booking-modal-form .loading-spinner {
   display: none;
+}
+
+/* VIP Button Styling (when bookingType is vip_tickets) */
+.gm-booking-modal-form .submit-button.vip-style {
+  background: linear-gradient(135deg, #ff6b35 0%, #e55a2b 100%);
+  box-shadow: 0 4px 14px 0 rgba(255, 107, 53, 0.25);
+}
+
+.gm-booking-modal-form .submit-button.vip-style:hover {
+  background: linear-gradient(135deg, #e55a2b 0%, #d44a1a 100%);
+  box-shadow: 0 6px 20px 0 rgba(255, 107, 53, 0.35);
 }
 
 /* MOBILE - SIMPLE STACK */
