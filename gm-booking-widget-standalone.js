@@ -854,9 +854,34 @@
       container.querySelector('input[name="bookingDate"]').value = formatDateToISO(tomorrow);
     }
     
-    // Set default venue area if specified
-    if (config.defaultVenueArea && !isVIPBooking) {
-      container.querySelector('select[name="venueArea"]').value = config.defaultVenueArea;
+    // Populate venue areas for pre-configured venues and set default
+    if (!isVIPBooking) {
+      const venueSelect = container.querySelector('select[name="venue"]');
+      const venueAreaSelect = container.querySelector('select[name="venueArea"]');
+      
+      // If venue is pre-configured (no venue dropdown), populate areas immediately
+      if (!venueSelect && config.venue && config.venue !== 'both') {
+        populateVenueAreas(config.venue, container);
+        
+        // Set default venue area if specified
+        if (config.defaultVenueArea && venueAreaSelect) {
+          // Use setTimeout to ensure options are populated first
+          setTimeout(() => {
+            venueAreaSelect.value = config.defaultVenueArea;
+          }, 0);
+        }
+      }
+      // If venue dropdown exists but has a pre-selected value, populate areas
+      else if (venueSelect && venueSelect.value) {
+        populateVenueAreas(venueSelect.value, container);
+      }
+      
+      // Set default venue area if specified (for cases with venue dropdown)
+      if (config.defaultVenueArea && venueAreaSelect) {
+        setTimeout(() => {
+          venueAreaSelect.value = config.defaultVenueArea;
+        }, 0);
+      }
     }
     
     // Add form submit handler
@@ -967,9 +992,34 @@
       formContainer.querySelector('input[name="bookingDate"]').value = formatDateToISO(tomorrow);
     }
     
-    // Set default venue area if specified
-    if (config.defaultVenueArea && !isVIPBooking) {
-      formContainer.querySelector('select[name="venueArea"]').value = config.defaultVenueArea;
+    // Populate venue areas for pre-configured venues and set default
+    if (!isVIPBooking) {
+      const venueSelect = formContainer.querySelector('select[name="venue"]');
+      const venueAreaSelect = formContainer.querySelector('select[name="venueArea"]');
+      
+      // If venue is pre-configured (no venue dropdown), populate areas immediately
+      if (!venueSelect && config.venue && config.venue !== 'both') {
+        populateVenueAreas(config.venue, formContainer);
+        
+        // Set default venue area if specified
+        if (config.defaultVenueArea && venueAreaSelect) {
+          // Use setTimeout to ensure options are populated first
+          setTimeout(() => {
+            venueAreaSelect.value = config.defaultVenueArea;
+          }, 0);
+        }
+      }
+      // If venue dropdown exists but has a pre-selected value, populate areas
+      else if (venueSelect && venueSelect.value) {
+        populateVenueAreas(venueSelect.value, formContainer);
+      }
+      
+      // Set default venue area if specified (for cases with venue dropdown)
+      if (config.defaultVenueArea && venueAreaSelect) {
+        setTimeout(() => {
+          venueAreaSelect.value = config.defaultVenueArea;
+        }, 0);
+      }
     }
     
     // Add form submit handler
