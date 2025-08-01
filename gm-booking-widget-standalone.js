@@ -288,13 +288,35 @@
       existingModal.remove();
     }
 
+    // Generate specific modal title based on venue and booking type
+    let modalTitle = 'Book Your Experience';
+    
+    if (config.bookingType === 'vip_tickets') {
+      if (config.venue === 'manor') {
+        modalTitle = 'Book Manor VIP Tickets';
+      } else if (config.venue === 'hippie') {
+        modalTitle = 'Book Hippie VIP Tickets';
+      } else {
+        modalTitle = 'Book VIP Tickets';
+      }
+    } else {
+      // Venue hire booking
+      if (config.venue === 'manor') {
+        modalTitle = 'Book Manor Venue';
+      } else if (config.venue === 'hippie') {
+        modalTitle = 'Book Hippie Venue';
+      } else {
+        modalTitle = 'Book Your Venue';
+      }
+    }
+
     const modalHTML = `
       <div id="gm-booking-modal" class="gm-booking-modal-overlay">
         <div class="gm-booking-modal-backdrop"></div>
         <div class="gm-booking-modal-container">
           <div class="gm-booking-modal-content ${config.theme === 'dark' ? 'dark' : ''} ${config.bookingType === 'vip_tickets' ? 'vip-modal' : ''}">
             <div class="modal-header">
-              <h2 class="modal-title">${config.bookingType === 'vip_tickets' ? 'Book VIP Tickets' : 'Book Your Venue'}</h2>
+              <h2 class="modal-title">${modalTitle}</h2>
               <button class="modal-close" onclick="closeBookingModal()">&times;</button>
             </div>
             <!-- Form content will be inserted directly here -->
@@ -1152,7 +1174,7 @@ async function initWidget(container, config) {
             <h2 class="modal-title">⚠️ Booking System Unavailable</h2>
             <button class="modal-close" onclick="this.closest('#gm-booking-modal').remove()">&times;</button>
           </div>
-          <div class="widget-error" style="margin: 32px; border: none; background: transparent;">
+          <div class="widget-error" style="margin: 8px 0 0 0; border: none; background: transparent;">
             <p>Unable to load venue information. Please try refreshing the page or contact support.</p>
             <small>Error: ${error.message}</small>
           </div>

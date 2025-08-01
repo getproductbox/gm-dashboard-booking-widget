@@ -380,8 +380,18 @@
 
 /* Modal form styling */
 .gm-booking-modal-content .modal-form {
-  padding: 0 32px 32px 32px;
+  padding: 8px 0 0 0;
   max-width: none;
+}
+
+/* Add padding to modal content for better spacing */
+.gm-booking-modal-content {
+  padding: 0 24px 24px 24px;
+}
+
+.gm-booking-modal-content .modal-header {
+  margin: 0 -24px 0 -24px;
+  padding: 24px 32px 20px 32px;
 }
 
 .gm-booking-modal-content .modal-form .form-row {
