@@ -1,0 +1,826 @@
+
+/* GM Booking Widget Styles */
+.gm-booking-widget {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  color: #333;
+}
+
+.gm-booking-widget * {
+  box-sizing: border-box;
+}
+
+.gm-booking-widget .widget-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Flexible sizing options */
+.gm-booking-widget.size-small .widget-card {
+  max-width: 300px;
+  padding: 16px;
+}
+
+.gm-booking-widget.size-large .widget-card {
+  max-width: 600px;
+  padding: 32px;
+}
+
+.gm-booking-widget.size-full .widget-card {
+  max-width: none;
+  width: 100%;
+}
+
+.gm-booking-widget .widget-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.gm-booking-widget .widget-title {
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.gm-booking-widget .form-group {
+  margin-bottom: 16px;
+}
+
+.gm-booking-widget .form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #374151;
+}
+
+.gm-booking-widget .form-input,
+.gm-booking-widget .form-select,
+.gm-booking-widget .form-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.gm-booking-widget .form-input:focus,
+.gm-booking-widget .form-select:focus,
+.gm-booking-widget .form-textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.gm-booking-widget .form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.gm-booking-widget .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.gm-booking-widget .submit-button {
+  background: #007bff;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.gm-booking-widget .submit-button:hover {
+  background: #0056b3;
+}
+
+.gm-booking-widget .submit-button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.gm-booking-widget .loading {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.gm-booking-widget .status-message {
+  padding: 12px;
+  border-radius: 6px;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.gm-booking-widget .status-success {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.gm-booking-widget .status-error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.gm-booking-widget .status-loading {
+  background: #e3f2fd;
+  border: 1px solid #2196f3;
+  color: #1976d2;
+}
+
+/* VIP Ticket Specific Styles */
+.gm-booking-widget .vip-date-picker {
+  position: relative;
+}
+
+.gm-booking-widget .vip-date-picker::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.7;
+}
+
+.gm-booking-widget .vip-date-picker:invalid {
+  border-color: #dc3545;
+}
+
+.gm-booking-widget .vip-date-picker:invalid + small {
+  color: #dc3545;
+}
+
+/* VIP Ticket Form Enhancements */
+.gm-booking-widget .vip-ticket-form .form-group {
+  margin-bottom: 20px;
+}
+
+.gm-booking-widget .vip-ticket-form .form-label {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.gm-booking-widget .vip-ticket-form .form-input,
+.gm-booking-widget .vip-ticket-form .form-select {
+  border-width: 2px;
+  padding: 12px 16px;
+  font-size: 16px;
+}
+
+.gm-booking-widget .vip-ticket-form .form-input:focus,
+.gm-booking-widget .vip-ticket-form .form-select:focus {
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.gm-booking-widget .vip-ticket-form .submit-button {
+  background: linear-gradient(135deg, #ff6b35 0%, #e55a2b 100%);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gm-booking-widget .vip-ticket-form .submit-button:hover {
+  background: linear-gradient(135deg, #e55a2b 0%, #d44a1a 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+/* VIP Ticket Header Styles */
+.gm-booking-widget .vip-header {
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 8px 8px 0 0;
+  margin: -24px -24px 24px -24px;
+  text-align: center;
+}
+
+.gm-booking-widget .vip-header .widget-title {
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.gm-booking-widget .vip-header p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+/* SIMPLE MODAL - CLEAN & WORKING */
+.gm-booking-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.gm-booking-modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 24px;
+  position: relative;
+}
+
+.gm-booking-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.gm-booking-modal-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.gm-booking-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 8px;
+}
+
+/* SIMPLE FORM - NO GRID COMPLEXITY */
+.gm-booking-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gm-booking-modal-form .form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.gm-booking-modal-form .form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gm-booking-modal-form .form-label {
+  font-weight: 600;
+  color: #333;
+}
+
+.gm-booking-modal-form .form-input, 
+.gm-booking-modal-form .form-select,
+.gm-booking-modal-form .form-textarea {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.gm-booking-modal-form .form-input:focus, 
+.gm-booking-modal-form .form-select:focus,
+.gm-booking-modal-form .form-textarea:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.gm-booking-modal-form .form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.gm-booking-modal-form .submit-button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.gm-booking-modal-form .submit-button:hover {
+  background: #0056b3;
+}
+
+/* MOBILE - SIMPLE STACK */
+@media (max-width: 640px) {
+  .gm-booking-modal-form .form-row {
+    flex-direction: column;
+  }
+  
+  .gm-booking-modal-content {
+    margin: 20px;
+    width: calc(100% - 40px);
+  }
+}
+
+/* Status and loading styles */
+.gm-booking-modal-form .status-container {
+  margin-top: 16px;
+}
+
+.gm-booking-modal-form .loading-spinner {
+  display: none;
+}
+
+/* END OF SIMPLE MODAL CSS */
+
+/* Mobile responsive - stack form rows vertically on small screens */
+@media (max-width: 640px) {
+  .gm-booking-modal-container {
+    width: 95%;
+    margin: 10px auto;
+  }
+  
+  .gm-booking-modal-content {
+    padding: 0 16px 16px 16px;
+  }
+  
+  .gm-booking-modal-content .modal-header {
+    margin: 0 -16px 0 -16px;
+    padding: 20px 20px 16px 20px;
+  }
+  
+  .gm-booking-modal-content .form-row,
+  .gm-booking-modal-content form .form-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* Tablet responsive - ensure good spacing on medium screens */
+@media (max-width: 768px) {
+  .gm-booking-modal-container {
+    width: 92%;
+    max-width: 500px;
+  }
+}
+
+.gm-booking-modal-content .submit-button {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  padding: 16px 32px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  width: auto;
+  min-width: 200px;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.25);
+  letter-spacing: 0.025em;
+  margin: 24px auto 0 auto;
+  display: block;
+  grid-column: 1 / -1;
+  justify-self: center;
+}
+
+.gm-booking-modal-content .submit-button:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.35);
+}
+
+.gm-booking-modal-content .submit-button:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.25);
+}
+
+.gm-booking-modal-content .submit-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.gm-booking-modal-content .loading-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+}
+
+.gm-booking-modal-content .status-message {
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.gm-booking-modal-content .status-success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.gm-booking-modal-content .status-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+/* VIP Modal Specific Styles */
+.gm-booking-modal-content.vip-modal .modal-title {
+  color: #ff6b35;
+}
+
+.gm-booking-modal-content.vip-modal .submit-button {
+  background: linear-gradient(135deg, #ff6b35 0%, #e55a2b 100%);
+  box-shadow: 0 4px 14px 0 rgba(255, 107, 53, 0.25);
+}
+
+.gm-booking-modal-content.vip-modal .submit-button:hover {
+  background: linear-gradient(135deg, #e55a2b 0%, #d44a1a 100%);
+  box-shadow: 0 6px 20px 0 rgba(255, 107, 53, 0.35);
+}
+
+.gm-booking-modal-content.vip-modal .form-input:focus,
+.gm-booking-modal-content.vip-modal .form-select:focus,
+.gm-booking-modal-content.vip-modal .form-textarea:focus {
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+/* Dark theme */
+.gm-booking-widget.dark {
+  color: #e5e7eb;
+}
+
+.gm-booking-widget.dark .widget-card {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.gm-booking-widget.dark .widget-title {
+  color: #f9fafb;
+}
+
+.gm-booking-widget.dark .form-label {
+  color: #d1d5db;
+}
+
+.gm-booking-widget.dark .form-input,
+.gm-booking-widget.dark .form-select,
+.gm-booking-widget.dark .form-textarea {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.gm-booking-widget.dark .form-input:focus,
+.gm-booking-widget.dark .form-select:focus,
+.gm-booking-widget.dark .form-textarea:focus {
+  border-color: #007bff;
+}
+
+/* Dark theme for modal */
+.gm-booking-modal-content.dark {
+  background: #1f2937;
+  color: #e5e7eb;
+}
+
+.gm-booking-modal-content.dark .modal-title {
+  color: #f9fafb;
+}
+
+.gm-booking-modal-content.dark .modal-close {
+  color: #9ca3af;
+}
+
+.gm-booking-modal-content.dark .modal-close:hover {
+  color: #d1d5db;
+}
+
+.gm-booking-modal-content.dark .form-label {
+  color: #d1d5db;
+}
+
+.gm-booking-modal-content.dark .form-input,
+.gm-booking-modal-content.dark .form-select,
+.gm-booking-modal-content.dark .form-textarea {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.gm-booking-modal-content.dark .form-input:focus,
+.gm-booking-modal-content.dark .form-select:focus,
+.gm-booking-modal-content.dark .form-textarea:focus {
+  border-color: #007bff;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .gm-booking-widget .widget-card {
+    padding: 16px;
+  }
+  
+  .gm-booking-widget .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .gm-booking-modal-container {
+    margin: 10px;
+    max-height: 95vh;
+  }
+  
+  .gm-booking-modal-content .modal-header {
+    padding: 16px 16px 0 16px;
+  }
+  
+  .gm-booking-modal-content .widget-form {
+    padding: 0 16px 16px 16px;
+  }
+}
+
+/* Large screen optimizations */
+@media (min-width: 768px) {
+  .gm-booking-modal-container {
+    max-width: 85vw;
+  }
+  
+  .gm-booking-modal-content .widget-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  
+  .gm-booking-modal-content .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .gm-booking-modal-content .form-group:last-child,
+  .gm-booking-modal-content .form-group:nth-last-child(2) {
+    grid-column: 1 / -1;
+  }
+
+  /* Ensure submit button is centered */
+  .gm-booking-modal-content .submit-button {
+    grid-column: 1 / -1;
+    justify-self: center;
+    text-align: center;
+    margin-top: 32px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .gm-booking-modal-container {
+    max-width: 75vw;
+  }
+}
+
+@media (min-width: 1600px) {
+  .gm-booking-modal-container {
+    max-width: 70vw;
+  }
+}
+
+/* Pricing Display Styles */
+.pricing-display {
+  margin-top: 24px;
+  padding: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  border-left: 4px solid #3b82f6;
+}
+
+.pricing-info h4 {
+  margin: 0 0 16px 0;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.price-breakdown {
+  margin-bottom: 16px;
+}
+
+.price-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.price-item:last-child {
+  border-bottom: none;
+}
+
+.price-item.total {
+  font-weight: 600;
+  font-size: 16px;
+  color: #1f2937;
+  border-top: 2px solid #3b82f6;
+  padding-top: 12px;
+  margin-top: 8px;
+}
+
+.includes h5 {
+  margin: 0 0 8px 0;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.includes ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.includes li {
+  margin-bottom: 4px;
+}
+
+/* Dark theme pricing */
+.gm-booking-modal-content.dark .pricing-display {
+  background: #1f2937;
+  border-color: #374151;
+  border-left-color: #3b82f6;
+}
+
+.gm-booking-modal-content.dark .pricing-info h4 {
+  color: #f9fafb;
+}
+
+.gm-booking-modal-content.dark .price-item {
+  border-bottom-color: #4b5563;
+}
+
+.gm-booking-modal-content.dark .price-item.total {
+  color: #f9fafb;
+  border-top-color: #3b82f6;
+}
+
+.gm-booking-modal-content.dark .includes h5 {
+  color: #d1d5db;
+}
+
+.gm-booking-modal-content.dark .includes ul {
+  color: #9ca3af;
+}
+
+/* VIP Ticket Specific Enhancements */
+.vip-ticket-form .form-group {
+  position: relative;
+}
+
+.vip-ticket-form .form-input[type="date"] {
+  position: relative;
+}
+
+.vip-ticket-form .form-input[type="date"]::-webkit-calendar-picker-indicator {
+  background: transparent;
+  bottom: 0;
+  color: transparent;
+  cursor: pointer;
+  height: auto;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: auto;
+}
+
+.vip-ticket-form .form-input[type="date"]:invalid {
+  border-color: #dc3545;
+}
+
+.vip-ticket-form .form-input[type="date"]:invalid + small {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+/* VIP Ticket Quantity Styles */
+.vip-ticket-form .form-input[type="number"] {
+  text-align: center;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.vip-ticket-form .form-input[type="number"]::-webkit-inner-spin-button,
+.vip-ticket-form .form-input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1;
+  height: 30px;
+}
+
+/* VIP Ticket Success Animation */
+@keyframes vipSuccess {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.vip-ticket-form .status-success {
+  animation: vipSuccess 0.5s ease-out;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 2px solid #10b981;
+  color: #065f46;
+  font-weight: 600;
+}
+
+/* VIP Ticket Error Animation */
+@keyframes vipError {
+  0% {
+    transform: translateX(-10px);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(5px);
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.vip-ticket-form .status-error {
+  animation: vipError 0.3s ease-out;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 2px solid #ef4444;
+  color: #991b1b;
+  font-weight: 600;
+}
+
+/* Error state styles */
+.widget-error {
+  background: #fff5f5;
+  border: 2px solid #dc3545;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.widget-error h3 {
+  color: #dc3545;
+  margin: 0 0 12px 0;
+  font-size: 18px;
+}
+
+.widget-error p {
+  color: #6c757d;
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+}
+
+.widget-error small {
+  color: #868e96;
+  font-size: 12px;
+  font-family: monospace;
+  display: block;
+  margin-top: 8px;
+}

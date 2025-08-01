@@ -312,15 +312,12 @@
 
     const modalHTML = `
       <div id="gm-booking-modal" class="gm-booking-modal-overlay">
-        <div class="gm-booking-modal-backdrop"></div>
-        <div class="gm-booking-modal-container">
-          <div class="gm-booking-modal-content ${config.theme === 'dark' ? 'dark' : ''} ${config.bookingType === 'vip_tickets' ? 'vip-modal' : ''}">
-            <div class="modal-header">
-              <h2 class="modal-title">${modalTitle}</h2>
-              <button class="modal-close" onclick="closeBookingModal()">&times;</button>
-            </div>
-            <!-- Form content will be inserted directly here -->
+        <div class="gm-booking-modal-content">
+          <div class="gm-booking-modal-header">
+            <h2 class="gm-booking-modal-title">${modalTitle}</h2>
+            <button class="gm-booking-modal-close" onclick="closeBookingModal()">&times;</button>
           </div>
+          <!-- Form content will be inserted directly here -->
         </div>
       </div>
     `;
@@ -328,8 +325,12 @@
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 
     // Add backdrop click handler
-    const backdrop = document.querySelector('.gm-booking-modal-backdrop');
-    backdrop.addEventListener('click', closeBookingModal);
+    const modal = document.getElementById('gm-booking-modal');
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeBookingModal();
+      }
+    });
 
     return document.getElementById('gm-booking-modal');
   }
@@ -357,7 +358,7 @@
     // VIP Tickets form fields (using direct modal approach that works)
     if (isVIPBooking) {
       return `
-        <form id="gm-booking-form" class="modal-form">
+        <form id="gm-booking-form" class="gm-booking-modal-form">
           <div class="form-group">
             <label class="form-label">Customer Name *</label>
             <input type="text" name="customerName" class="form-input" placeholder="Enter your name" required>
@@ -1031,7 +1032,7 @@ async function initWidget(container, config) {
     
     // Insert form content directly into modal content (after header)
     const modalContent = modal.querySelector('.gm-booking-modal-content');
-    const modalHeader = modalContent.querySelector('.modal-header');
+    const modalHeader = modalContent.querySelector('.gm-booking-modal-header');
     modalHeader.insertAdjacentHTML('afterend', createModalFormHTML(config));
     
     // For compatibility, create a reference to the modal content as formContainer
@@ -1167,17 +1168,14 @@ async function initWidget(container, config) {
     errorModal.className = 'gm-booking-modal-overlay';
     errorModal.style.display = 'flex';
     errorModal.innerHTML = `
-      <div class="gm-booking-modal-backdrop" onclick="this.parentElement.remove()"></div>
-      <div class="gm-booking-modal-container">
-        <div class="gm-booking-modal-content">
-          <div class="modal-header">
-            <h2 class="modal-title">⚠️ Booking System Unavailable</h2>
-            <button class="modal-close" onclick="this.closest('#gm-booking-modal').remove()">&times;</button>
-          </div>
-          <div class="widget-error" style="margin: 8px 0 0 0; border: none; background: transparent;">
-            <p>Unable to load venue information. Please try refreshing the page or contact support.</p>
-            <small>Error: ${error.message}</small>
-          </div>
+      <div class="gm-booking-modal-content">
+        <div class="gm-booking-modal-header">
+          <h2 class="gm-booking-modal-title">⚠️ Booking System Unavailable</h2>
+          <button class="gm-booking-modal-close" onclick="this.closest('#gm-booking-modal').remove()">&times;</button>
+        </div>
+        <div style="padding: 16px; text-align: center; color: #dc3545;">
+          <p>Unable to load venue information. Please try refreshing the page or contact support.</p>
+          <small style="color: #666; font-family: monospace;">Error: ${error.message}</small>
         </div>
       </div>
     `;
