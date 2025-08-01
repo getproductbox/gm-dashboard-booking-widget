@@ -271,6 +271,16 @@
     `;
   }
 
+  /**
+   * Creates the modal overlay structure without form content
+   * 
+   * IMPORTANT: This creates a clean modal structure where form content
+   * is inserted directly into .gm-booking-modal-content after the header.
+   * This ensures CSS selectors like ".gm-booking-modal-content .form-row" work correctly.
+   * 
+   * @param {Object} config - Widget configuration
+   * @returns {HTMLElement} - The modal element
+   */
   function createModalOverlay(config) {
     // Remove existing modal if present
     const existingModal = document.getElementById('gm-booking-modal');
@@ -287,9 +297,7 @@
               <h2 class="modal-title">${config.bookingType === 'vip_tickets' ? 'Book VIP Tickets' : 'Book Your Venue'}</h2>
               <button class="modal-close" onclick="closeBookingModal()">&times;</button>
             </div>
-            <div class="widget-form">
-              <!-- Form content will be populated by createWidgetHTML -->
-            </div>
+            <!-- Form content will be inserted directly here -->
           </div>
         </div>
       </div>
@@ -304,6 +312,16 @@
     return document.getElementById('gm-booking-modal');
   }
 
+  /**
+   * Creates form HTML for modal insertion
+   * 
+   * IMPORTANT: This generates form HTML that will be inserted directly into
+   * .gm-booking-modal-content. The form uses class="modal-form" and relies on
+   * CSS selectors like ".gm-booking-modal-content .form-row" for 2-column layout.
+   * 
+   * @param {Object} config - Widget configuration
+   * @returns {string} - Form HTML string
+   */
   function createModalFormHTML(config) {
     const isVIPBooking = config.bookingType === 'vip_tickets';
     
@@ -317,7 +335,7 @@
     // VIP Tickets form fields (using direct modal approach that works)
     if (isVIPBooking) {
       return `
-        <form id="gm-booking-form" class="direct-modal-form">
+        <form id="gm-booking-form" class="modal-form">
           <div class="form-group">
             <label class="form-label">Customer Name *</label>
             <input type="text" name="customerName" class="form-input" placeholder="Enter your name" required>
@@ -989,9 +1007,13 @@ async function initWidget(container, config) {
     // Create modal overlay
     const modal = createModalOverlay(config);
     
-    // Create widget HTML after venue data is loaded
-    const formContainer = modal.querySelector('.widget-form');
-    formContainer.innerHTML = createModalFormHTML(config);
+    // Insert form content directly into modal content (after header)
+    const modalContent = modal.querySelector('.gm-booking-modal-content');
+    const modalHeader = modalContent.querySelector('.modal-header');
+    modalHeader.insertAdjacentHTML('afterend', createModalFormHTML(config));
+    
+    // For compatibility, create a reference to the modal content as formContainer
+    const formContainer = modalContent;
     
     // Set default date based on booking type
     const isVIPBooking = config.bookingType === 'vip_tickets';
@@ -1117,7 +1139,7 @@ async function initWidget(container, config) {
   } catch (error) {
     console.error('Failed to initialize booking modal:', error);
     
-    // Create error modal
+    // Create error modal with consistent structure
     const errorModal = document.createElement('div');
     errorModal.id = 'gm-booking-modal';
     errorModal.className = 'gm-booking-modal-overlay';
@@ -1130,7 +1152,7 @@ async function initWidget(container, config) {
             <h2 class="modal-title">⚠️ Booking System Unavailable</h2>
             <button class="modal-close" onclick="this.closest('#gm-booking-modal').remove()">&times;</button>
           </div>
-          <div style="padding: 32px;">
+          <div class="widget-error" style="margin: 32px; border: none; background: transparent;">
             <p>Unable to load venue information. Please try refreshing the page or contact support.</p>
             <small>Error: ${error.message}</small>
           </div>

@@ -378,6 +378,43 @@
   gap: 20px;
 }
 
+/* Modal form styling */
+.gm-booking-modal-content .modal-form {
+  padding: 0 32px 32px 32px;
+  max-width: none;
+}
+
+.gm-booking-modal-content .modal-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+/* Defensive CSS - ensure form rows work regardless of nesting */
+.gm-booking-modal-content form .form-row,
+.gm-booking-modal-content .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* Ensure single form groups stack vertically */
+.gm-booking-modal-content .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Mobile responsive - stack form rows vertically on small screens */
+@media (max-width: 640px) {
+  .gm-booking-modal-content .form-row,
+  .gm-booking-modal-content form .form-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
 .gm-booking-modal-content .submit-button {
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
