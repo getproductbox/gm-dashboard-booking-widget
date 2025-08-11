@@ -74,13 +74,15 @@
   async function fetchVenueConfig(venueFilter = null) {
     try {
       const config = window.GMBookingWidgetConfig;
-      let url = `${config.apiEndpoint}/venue-config-api`;
+      const base = (config.apiEndpoint || '').replace(/\/$/, '');
+      let url = `${base}/venue-config-api`;
       if (venueFilter) {
         url += `?venue=${venueFilter}`;
       }
 
       const response = await fetch(url, {
         headers: {
+          'Authorization': `Bearer ${config.apiKey}`,
           'x-api-key': config.apiKey,
           'Content-Type': 'application/json'
         }
@@ -1457,7 +1459,9 @@
 
     try {
       const base = (config.apiEndpoint || '').replace(/\/$/, '');
-      const endpointUrl = /public-booking-api(\-v2)?$/i.test(base) ? base : `${base}/public-booking-api`;
+      const endpointUrl = config.bookingApiName
+        ? `${base}/${config.bookingApiName}`
+        : (/public-booking-api(\-v2)?$/i.test(base) ? base : `${base}/public-booking-api`);
       const response = await fetch(endpointUrl, {
         method: 'POST',
         headers: {
