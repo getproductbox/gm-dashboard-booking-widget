@@ -74,9 +74,25 @@
   async function fetchVenueConfig(venueFilter = null) {
     try {
       const config = window.GMBookingWidgetConfig;
-      const venues = await (window.GMVenueAPI
-        ? window.GMVenueAPI.fetchVenueConfig(config, venueFilter)
-        : (async () => { throw new Error('GMVenueAPI not available'); })());
+      let venues;
+      if (window.GMVenueAPI && typeof window.GMVenueAPI.fetchVenueConfig === 'function') {
+        venues = await window.GMVenueAPI.fetchVenueConfig(config, venueFilter);
+      } else {
+        // Fallback to inline request if module is not loaded
+        const base = (config.apiEndpoint || '').replace(/\/$/, '');
+        let url = `${base}/venue-config-api`;
+        if (venueFilter) url += `?venue=${venueFilter}`;
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${config.apiKey}`,
+            'x-api-key': config.apiKey,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const data = await response.json();
+        venues = venueFilter ? (data.venue ? [data.venue] : []) : (data.venues || []);
+      }
       venueConfig = venues;
       dataCache.venueConfig = venues;
       dataCache.lastUpdated = Date.now();
