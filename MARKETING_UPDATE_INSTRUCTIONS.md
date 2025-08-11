@@ -1,3 +1,4 @@
+
 # 🚀 Marketing Team - Widget Update Instructions
 
 ## 📋 **What Changed**
@@ -24,23 +25,23 @@ Replace these files on your marketing site:
 - `https://booking-widget.getproductbox.com/gm-booking-widget-standalone.js`
 - `https://booking-widget.getproductbox.com/widget.css`
 
-### **2. No Code Changes Needed! 🎉**
+### **2. Configure API (new option)**
 
-Your existing JavaScript code will continue to work:
+Set `window.GMBookingWidgetConfig` before loading the script:
 
-```javascript
-// These still work exactly the same
-GMBookingModal({
-    venue: 'manor',
-    bookingType: 'venue_hire',
-    showSpecialRequests: true
-});
-
-GMBookingModal({
-    bookingType: 'vip_tickets',
-    venue: 'hippie'
-});
+```html
+<script>
+  window.GMBookingWidgetConfig = {
+    apiEndpoint: 'https://YOUR-PROJECT.supabase.co/functions/v1',
+    bookingApiName: 'public-booking-api-v2',
+    apiKey: 'demo-api-key-2024',
+    supabaseUrl: 'https://YOUR-PROJECT.supabase.co',
+    supabaseAnonKey: 'YOUR-ANON-KEY'
+  };
+</script>
 ```
+
+Your existing calls to `GMBookingModal({...})` continue to work.
 
 ## ✅ **Testing Checklist**
 

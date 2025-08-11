@@ -2,19 +2,19 @@
 (function() {
   'use strict';
 
-  // Widget configuration
-  window.GMBookingWidgetConfig = window.GMBookingWidgetConfig || {
-    // Legacy/public booking API (venue hire / vip)
+  // Widget configuration defaults (can be overridden by page-level config)
+  const DEFAULT_CONFIG = {
     apiEndpoint: 'https://plksvatjdylpuhjitbfc.supabase.co/functions/v1',
-    apiKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3N2YXRqZHlscHVoaml0YmZjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDc2NDkzMywiZXhwIjoyMDY2MzQwOTMzfQ.M4Ikh3gSAVTPDxkMNrXLFxCPjHYqaBC5HcVavpHpNlk',
-    // Supabase client for karaoke flow
+    apiKey: '',
+    bookingApiName: undefined,
     supabaseUrl: 'https://plksvatjdylpuhjitbfc.supabase.co',
-    supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3N2YXRqZHlscHVoaml0YmZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NjQ5MzMsImV4cCI6MjA2NjM0MDkzM30.IdM8u1iq88C0ruwp7IkMB7PxwnfwmRyl6uLnBmZq5ys',
+    supabaseAnonKey: '',
     theme: 'light',
     primaryColor: '#007bff',
     showSpecialRequests: true,
     debug: false
   };
+  window.GMBookingWidgetConfig = Object.assign({}, DEFAULT_CONFIG, window.GMBookingWidgetConfig || {});
 
   // Dynamic data storage
   let venueConfig = null;
