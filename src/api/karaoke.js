@@ -45,4 +45,16 @@ export async function karaokeFinalizeBooking(config, { holdId, sessionId, custom
   });
 }
 
+// UMD attach
+if (typeof window !== 'undefined') {
+  window.GMKaraokeAPI = {
+    fetchKaraokeVenueSlots,
+    fetchKaraokeBoothsForSlot,
+    karaokeCreateHold,
+    karaokeReleaseHold,
+    karaokeExtendHold,
+    karaokeFinalizeBooking,
+  };
+}
+
 

@@ -22,4 +22,10 @@ export async function ensureSupabaseClient(config) {
   return supabaseClient;
 }
 
+// UMD attach for direct browser use without bundler
+if (typeof window !== 'undefined') {
+  window.GMTransport = window.GMTransport || {};
+  window.GMTransport.ensureSupabaseClient = ensureSupabaseClient;
+}
+
 

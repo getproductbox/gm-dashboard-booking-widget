@@ -29,4 +29,9 @@ export async function fetchPricing(config, { venue, venueArea, date, guests, dur
   return res.json();
 }
 
+// UMD attach
+if (typeof window !== 'undefined') {
+  window.GMVenueAPI = { fetchVenueConfig, fetchPricing };
+}
+
 
