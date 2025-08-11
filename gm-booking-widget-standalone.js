@@ -465,11 +465,15 @@
     const boothsWrap = container.querySelector('.karaoke-booths');
     const boothsSelect = container.querySelector('select[name="boothId"]');
     const holdWrap = container.querySelector('.karaoke-hold');
+    const holdInput = container.querySelector('input[name="holdId"]');
+    const sessionInput = container.querySelector('input[name="sessionId"]');
     if (boothsSelect) {
       boothsSelect.innerHTML = '<option value="">Select a booth</option>';
     }
     if (boothsWrap) boothsWrap.style.display = 'none';
     if (holdWrap) holdWrap.style.display = 'none';
+    if (holdInput) holdInput.value = '';
+    if (sessionInput) sessionInput.value = '';
   }
 
   function startHoldCountdown(container, config) {
@@ -692,6 +696,27 @@
           const expiresAt = data?.expires_at || new Date(Date.now() + 10 * 60 * 1000).toISOString();
           setKaraokeState(container, { holdId, holdExpiresAt: expiresAt });
           startHoldCountdown(container, config);
+          // Mirror state to hidden inputs as a safety net for submission
+          const form = container.querySelector('#gm-booking-form');
+          if (form) {
+            let holdInput = form.querySelector('input[name="holdId"]');
+            if (!holdInput) {
+              holdInput = document.createElement('input');
+              holdInput.type = 'hidden';
+              holdInput.name = 'holdId';
+              form.appendChild(holdInput);
+            }
+            holdInput.value = String(holdId || '');
+            let sessionInput = form.querySelector('input[name="sessionId"]');
+            if (!sessionInput) {
+              sessionInput = document.createElement('input');
+              sessionInput.type = 'hidden';
+              sessionInput.name = 'sessionId';
+              form.appendChild(sessionInput);
+            }
+            const stateNow = getKaraokeState(container);
+            sessionInput.value = String(stateNow.sessionId || '');
+          }
           // Clear any previous error now that hold is active
           showStatus(container, '', '');
         } catch (err) {
@@ -1359,7 +1384,15 @@
     if (isKaraoke) {
       try {
         const state = getKaraokeState(container);
+        // Fallback: also check hidden inputs in case state got detached due to container scoping
         if (!state.holdId) {
+          const holdInput = form.querySelector('input[name="holdId"]');
+          const sessionInput = form.querySelector('input[name="sessionId"]');
+          if (holdInput && holdInput.value) {
+            setKaraokeState(container, { holdId: holdInput.value, sessionId: sessionInput?.value || state.sessionId });
+          }
+        }
+        if (!getKaraokeState(container).holdId) {
           showStatus(container, '❌ Select a time and booth to continue.', 'error');
           return;
         }
