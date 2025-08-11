@@ -4,8 +4,12 @@
 
   // Widget configuration
   window.GMBookingWidgetConfig = window.GMBookingWidgetConfig || {
+    // Legacy/public booking API (venue hire / vip)
     apiEndpoint: 'https://plksvatjdylpuhjitbfc.supabase.co/functions/v1',
     apiKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3N2YXRqZHlscHVoaml0YmZjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDc2NDkzMywiZXhwIjoyMDY2MzQwOTMzfQ.M4Ikh3gSAVTPDxkMNrXLFxCPjHYqaBC5HcVavpHpNlk',
+    // Supabase client for karaoke flow
+    supabaseUrl: 'https://plksvatjdylpuhjitbfc.supabase.co',
+    supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3N2YXRqZHlscHVoaml0YmZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NjQ5MzMsImV4cCI6MjA2NjM0MDkzM30.IdM8u1iq88C0ruwp7IkMB7PxwnfwmRyl6uLnBmZq5ys',
     theme: 'light',
     primaryColor: '#007bff',
     showSpecialRequests: true,
@@ -22,6 +26,8 @@
     venueConfig: null,
     pricing: {},
     karaokeBooths: {},
+    karaokeAvailability: {}, // key: venue|date|minCapacity|granularity -> { data, ts }
+    karaokeBoothsBySlot: {}, // key: venue|date|start|end|minCapacity -> { data, ts }
     lastUpdated: null
   };
 
@@ -37,9 +43,17 @@
     });
   }
 
-  // Format date for API
+  // Format date for API (UTC-sensitive)
   function formatDateToISO(date) {
     return date.toISOString().split('T')[0];
+  }
+
+  // Format date as local YYYY-MM-DD (no timezone conversion)
+  function formatDateLocal(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   // Check if date is a Saturday
@@ -104,6 +118,91 @@
 
   // Note: fetchTimeSlots function removed - no longer needed for venue bookings
   // Time slots API is only used for karaoke booth bookings
+
+  // Supabase client (loaded on demand for karaoke flow)
+  let supabaseClient = null;
+
+  async function ensureSupabaseClient(config) {
+    if (supabaseClient) return supabaseClient;
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+      supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+      return supabaseClient;
+    }
+
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+      script.async = true;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('Failed to load Supabase client'));
+      document.head.appendChild(script);
+    });
+    if (!window.supabase || !window.supabase.createClient) {
+      throw new Error('Supabase client not available after loading script');
+    }
+    supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+    return supabaseClient;
+  }
+
+  // Karaoke API wrappers
+  async function fetchKaraokeVenueSlots(supabase, { venue, bookingDate, minCapacity, granularityMinutes = 60 }) {
+    const cacheKey = `${venue}|${bookingDate}|${minCapacity}|${granularityMinutes}`;
+    const cached = dataCache.karaokeAvailability[cacheKey];
+    const now = Date.now();
+    if (cached && (now - cached.ts) < 60 * 1000) { // 60s TTL
+      return { data: cached.data, error: null };
+    }
+    const res = await supabase.functions.invoke('karaoke-availability', {
+      body: { venue, bookingDate, minCapacity, granularityMinutes }
+    });
+    if (!res.error) {
+      dataCache.karaokeAvailability[cacheKey] = { data: res.data, ts: now };
+    }
+    return res;
+  }
+
+  async function fetchKaraokeBoothsForSlot(supabase, { venue, bookingDate, startTime, endTime, minCapacity }) {
+    const cacheKey = `${venue}|${bookingDate}|${startTime}|${endTime}|${minCapacity}`;
+    const cached = dataCache.karaokeBoothsBySlot[cacheKey];
+    const now = Date.now();
+    if (cached && (now - cached.ts) < 60 * 1000) { // 60s TTL
+      return { data: cached.data, error: null };
+    }
+    const res = await supabase.functions.invoke('karaoke-availability', {
+      body: { action: 'boothsForSlot', venue, bookingDate, startTime, endTime, minCapacity }
+    });
+    if (!res.error) {
+      dataCache.karaokeBoothsBySlot[cacheKey] = { data: res.data, ts: now };
+    }
+    return res;
+  }
+
+  async function karaokeCreateHold(supabase, { boothId, venue, bookingDate, startTime, endTime, sessionId, customerEmail, ttlMinutes = 10 }) {
+    return supabase.functions.invoke('karaoke-holds', {
+      headers: { 'x-action': 'create' },
+      body: { boothId, venue, bookingDate, startTime, endTime, sessionId, customerEmail, ttlMinutes }
+    });
+  }
+
+  async function karaokeReleaseHold(supabase, { holdId, sessionId }) {
+    return supabase.functions.invoke('karaoke-holds', {
+      headers: { 'x-action': 'release' },
+      body: { holdId, sessionId }
+    });
+  }
+
+  async function karaokeExtendHold(supabase, { holdId, sessionId, ttlMinutes = 10 }) {
+    return supabase.functions.invoke('karaoke-holds', {
+      headers: { 'x-action': 'extend' },
+      body: { holdId, sessionId, ttlMinutes }
+    });
+  }
+
+  async function karaokeFinalizeBooking(supabase, { holdId, sessionId, customerName, customerEmail, customerPhone, guestCount }) {
+    return supabase.functions.invoke('karaoke-book', {
+      body: { holdId, sessionId, customerName, customerEmail, customerPhone, guestCount }
+    });
+  }
 
   async function fetchPricing(venue, venueArea, date, guests, duration = 4) {
     try {
@@ -271,6 +370,347 @@
     `;
   }
 
+  // -----------------------------
+  // Karaoke Flow (UI + State)
+  // -----------------------------
+
+  function getKaraokeState(container) {
+    if (!container.__karaokeState) {
+      container.__karaokeState = {
+        sessionId: localStorage.getItem('karaoke_session_id') || null,
+        selectedSlot: null, // { startTime, endTime }
+        minCapacity: null,
+        holdId: null,
+        holdExpiresAt: null,
+        countdownIntervalId: null,
+        didAutoExtend: false
+      };
+      if (!container.__karaokeState.sessionId) {
+        container.__karaokeState.sessionId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
+        localStorage.setItem('karaoke_session_id', container.__karaokeState.sessionId);
+      }
+    }
+    return container.__karaokeState;
+  }
+
+  function setKaraokeState(container, updates) {
+    const state = getKaraokeState(container);
+    Object.assign(state, updates);
+    return state;
+  }
+
+  function renderKaraokeSlots(container, slots) {
+    const grid = container.querySelector('.karaoke-slots');
+    const empty = container.querySelector('.karaoke-empty');
+    const loading = container.querySelector('.karaoke-slots-loading');
+    if (!grid) return;
+    grid.innerHTML = '';
+    if (loading) loading.style.display = 'none';
+
+    const availableSlots = (slots || []).filter(s => s.available);
+    if (availableSlots.length === 0) {
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+
+    const state = getKaraokeState(container);
+    availableSlots.forEach(slot => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'karaoke-slot-btn';
+      const chips = Array.isArray(slot.capacities) && slot.capacities.length
+        ? `<div class=\"cap-chips\">${slot.capacities.map(c => `<span class=\"cap-chip\">${c}</span>`).join('')}</div>`
+        : '';
+      btn.innerHTML = `<div class=\"slot-line\">${slot.startTime} – ${slot.endTime}</div>${chips}`;
+      btn.dataset.startTime = slot.startTime;
+      btn.dataset.endTime = slot.endTime;
+      if (state.selectedSlot && state.selectedSlot.startTime === slot.startTime && state.selectedSlot.endTime === slot.endTime) {
+        btn.classList.add('selected');
+      }
+      grid.appendChild(btn);
+    });
+  }
+
+  async function hydrateSlotCapacities(container, config) {
+    const venue = (container.querySelector('select[name="venue"]')?.value) || config.venue;
+    const bookingDate = container.querySelector('input[name="bookingDate"]').value;
+    const guestCountStr = container.querySelector('input[name="guestCount"]').value;
+    const minCapacity = Math.max(1, parseInt(guestCountStr || '0', 10));
+    if (!venue || !bookingDate || !minCapacity) return;
+
+    const supabase = await ensureSupabaseClient(config);
+    const buttons = Array.from(container.querySelectorAll('.karaoke-slot-btn'));
+    let index = 0;
+    const concurrency = 4;
+    async function worker() {
+      while (index < buttons.length) {
+        const current = buttons[index++];
+        if (!current || current.querySelector('.cap-chips')) continue;
+        const startTime = current.dataset.startTime;
+        const endTime = current.dataset.endTime;
+        try {
+          const { data } = await fetchKaraokeBoothsForSlot(supabase, { venue, bookingDate, startTime, endTime, minCapacity });
+          const capacities = Array.from(new Set((data?.availableBooths || []).map(b => b.capacity))).sort((a,b) => a - b);
+          if (capacities.length && !current.querySelector('.cap-chips')) {
+            current.insertAdjacentHTML('beforeend', `<div class="cap-chips">${capacities.map(c => `<span class=\"cap-chip\">${c}</span>`).join('')}</div>`);
+          }
+        } catch (_) { /* ignore per-slot errors */ }
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(concurrency, buttons.length) }, () => worker()));
+  }
+
+  function clearKaraokeUI(container) {
+    const boothsWrap = container.querySelector('.karaoke-booths');
+    const boothsSelect = container.querySelector('select[name="boothId"]');
+    const holdWrap = container.querySelector('.karaoke-hold');
+    if (boothsSelect) {
+      boothsSelect.innerHTML = '<option value="">Select a booth</option>';
+    }
+    if (boothsWrap) boothsWrap.style.display = 'none';
+    if (holdWrap) holdWrap.style.display = 'none';
+  }
+
+  function startHoldCountdown(container, config) {
+    const state = getKaraokeState(container);
+    const holdWrap = container.querySelector('.karaoke-hold');
+    const countdown = container.querySelector('.hold-countdown');
+    if (!holdWrap || !countdown || !state.holdExpiresAt) return;
+    holdWrap.style.display = 'block';
+
+    if (state.countdownIntervalId) clearInterval(state.countdownIntervalId);
+    state.didAutoExtend = false;
+
+    function update() {
+      const now = Date.now();
+      const distance = new Date(state.holdExpiresAt).getTime() - now;
+      if (distance <= 0) {
+        clearInterval(state.countdownIntervalId);
+        countdown.textContent = '00:00';
+        return;
+      }
+      const minutes = Math.floor(distance / 60000);
+      const seconds = Math.floor((distance % 60000) / 1000);
+      countdown.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+      // Auto-extend once at T-60s
+      if (!state.didAutoExtend && distance <= 60000 && state.holdId) {
+        state.didAutoExtend = true;
+        ensureSupabaseClient(config).then(supabase => karaokeExtendHold(supabase, {
+          holdId: state.holdId,
+          sessionId: state.sessionId,
+          ttlMinutes: 10
+        })).catch(() => {/* ignore errors on auto-extend */});
+      }
+    }
+    update();
+    state.countdownIntervalId = setInterval(update, 1000);
+  }
+
+  async function karaokeRefreshAvailability(container, config) {
+    try {
+      const loading = container.querySelector('.karaoke-slots-loading');
+      const slotsGroup = container.querySelector('.karaoke-slots-group');
+      const dateVal = container.querySelector('input[name="bookingDate"]').value;
+      if (!dateVal) {
+        // No date selected → ensure slots UI is hidden and do not fetch
+        if (slotsGroup) slotsGroup.style.display = 'none';
+        return;
+      }
+      if (slotsGroup) slotsGroup.style.display = 'block';
+      if (loading) loading.style.display = 'flex';
+      const venue = (container.querySelector('select[name="venue"]')?.value) || config.venue;
+      const bookingDate = container.querySelector('input[name="bookingDate"]').value; // already YYYY-MM-DD
+      const guestCountStr = container.querySelector('input[name="guestCount"]').value;
+      const minCapacity = Math.max(1, parseInt(guestCountStr || '0', 10));
+      const supabase = await ensureSupabaseClient(config);
+      const { data, error } = await fetchKaraokeVenueSlots(supabase, {
+        venue,
+        bookingDate,
+        minCapacity,
+        granularityMinutes: 60
+      });
+      if (error) throw error;
+      const slots = data?.slots || [];
+      renderKaraokeSlots(container, slots);
+      // If capacities are not provided by API, hydrate from per-slot booth results in background
+      const hasCaps = Array.isArray(slots) && slots.some(s => Array.isArray(s.capacities) && s.capacities.length);
+      if (!hasCaps) {
+        // Fire and forget; do not block UI
+        hydrateSlotCapacities(container, config);
+      }
+    } catch (err) {
+      showStatus(container, `❌ Failed to load availability. Please retry.`, 'error');
+    }
+  }
+
+  async function clearKaraokeState(container, config, opts = { releaseHold: false, clearSession: false }) {
+    const state = getKaraokeState(container);
+    if (state.countdownIntervalId) {
+      clearInterval(state.countdownIntervalId);
+      state.countdownIntervalId = null;
+    }
+    if (opts.releaseHold && state.holdId) {
+      try {
+        const supabase = await ensureSupabaseClient(config);
+        await karaokeReleaseHold(supabase, { holdId: state.holdId, sessionId: state.sessionId });
+      } catch (_) { /* no-op */ }
+    }
+    setKaraokeState(container, {
+      selectedSlot: null,
+      holdId: null,
+      holdExpiresAt: null,
+      didAutoExtend: false
+    });
+    if (opts.clearSession) {
+      try { localStorage.removeItem('karaoke_session_id'); } catch (_) {}
+    }
+    clearKaraokeUI(container);
+  }
+
+  function setupKaraokeHandlers(container, config) {
+    const venueSelect = container.querySelector('select[name="venue"]');
+    const dateInput = container.querySelector('input[name="bookingDate"]');
+    const guestInput = container.querySelector('input[name="guestCount"]');
+    const slotsGrid = container.querySelector('.karaoke-slots');
+    const boothsWrap = container.querySelector('.karaoke-booths');
+    const boothsSelect = container.querySelector('select[name="boothId"]');
+    const holdWrap = container.querySelector('.karaoke-hold');
+    const holdCancelBtn = container.querySelector('.hold-cancel');
+
+    async function loadSlots() {
+      await clearKaraokeState(container, config, { releaseHold: true, clearSession: false });
+      await karaokeRefreshAvailability(container, config);
+    }
+
+    // Trigger availability on input changes
+    [venueSelect, dateInput, guestInput].forEach(el => {
+      if (!el) return;
+      el.addEventListener('change', loadSlots);
+      if (el === guestInput) {
+        el.addEventListener('input', () => {
+          // Debounce-ish: small timeout
+          clearTimeout(el.__debounce);
+          el.__debounce = setTimeout(loadSlots, 300);
+        });
+      }
+    });
+
+    // Initial load if fields pre-filled
+    if ((venueSelect?.value || config.venue) && dateInput?.value && guestInput?.value) {
+      loadSlots();
+    } else {
+      const group = container.querySelector('.karaoke-slots-group');
+      if (group) group.style.display = 'none';
+    }
+
+    // Slot click → fetch booths
+    if (slotsGrid) {
+      slotsGrid.addEventListener('click', async (e) => {
+        const target = e.target.closest('.karaoke-slot-btn');
+        if (!target) return;
+        const startTime = target.dataset.startTime;
+        const endTime = target.dataset.endTime;
+        const venue = (venueSelect?.value) || config.venue;
+        const bookingDate = dateInput.value;
+        const minCapacity = Math.max(1, parseInt(guestInput.value || '0', 10));
+
+        // Immediate visual selection feedback
+        const buttons = container.querySelectorAll('.karaoke-slot-btn');
+        buttons.forEach(b => b.classList.remove('selected'));
+        target.classList.add('selected');
+
+        // Release old hold and clear UI (does not affect slot selection visuals)
+        await clearKaraokeState(container, config, { releaseHold: true, clearSession: false });
+        setKaraokeState(container, { selectedSlot: { startTime, endTime }, minCapacity });
+        // Clear any previous status message when changing slot
+        showStatus(container, '', '');
+
+        // Show booths area with loading state immediately
+        const boothsLoading = container.querySelector('.karaoke-booths-loading');
+        boothsWrap.style.display = 'block';
+        if (boothsLoading) boothsLoading.style.display = 'flex';
+        if (boothsSelect) boothsSelect.disabled = true;
+
+        try {
+          const supabase = await ensureSupabaseClient(config);
+          const { data, error } = await fetchKaraokeBoothsForSlot(supabase, {
+            venue, bookingDate, startTime, endTime, minCapacity
+          });
+          if (error) throw error;
+          const booths = data?.availableBooths || [];
+          boothsSelect.innerHTML = '<option value="">Select a booth</option>' + booths.map(b => {
+            const currency = '£';
+            const rate = (typeof b.hourly_rate === 'number') ? `${currency}${b.hourly_rate.toFixed(2)}` : `${currency}${b.hourly_rate}`;
+            return `<option value="${b.id}">${b.name} — cap ${b.capacity} (${rate}/hour)</option>`;
+          }).join('');
+          if (boothsLoading) boothsLoading.style.display = 'none';
+          if (boothsSelect) boothsSelect.disabled = false;
+        } catch (err) {
+          if (boothsLoading) boothsLoading.style.display = 'none';
+          if (boothsSelect) boothsSelect.disabled = false;
+          showStatus(container, '❌ Failed to load booths. Please try another slot.', 'error');
+        }
+      });
+    }
+
+    // Booth selection → create hold
+    if (boothsSelect) {
+      boothsSelect.addEventListener('change', async (e) => {
+        const boothId = e.target.value;
+        const state = getKaraokeState(container);
+        if (!boothId || !state?.selectedSlot) return;
+
+        try {
+          const supabase = await ensureSupabaseClient(config);
+          const venue = (venueSelect?.value) || config.venue;
+          const bookingDate = dateInput.value;
+          const { startTime, endTime } = state.selectedSlot;
+          const { data, error } = await karaokeCreateHold(supabase, {
+            boothId,
+            venue,
+            bookingDate,
+            startTime,
+            endTime,
+            sessionId: state.sessionId,
+            customerEmail: (container.querySelector('input[name="customerEmail"]').value) || undefined,
+            ttlMinutes: 10
+          });
+          if (error) {
+            const status = error?.status || error?.code;
+            if (status === 409 || status === 400) {
+              showStatus(container, '❌ That slot just got taken. Please pick another time.', 'error');
+              await karaokeRefreshAvailability(container, config);
+            } else {
+              showStatus(container, '❌ Could not create hold. Please try a different slot.', 'error');
+            }
+            return;
+          }
+          // Expect data to include holdId and expires_at
+          const holdId = data?.holdId || data?.id;
+          const expiresAt = data?.expires_at || new Date(Date.now() + 10 * 60 * 1000).toISOString();
+          setKaraokeState(container, { holdId, holdExpiresAt: expiresAt });
+          startHoldCountdown(container, config);
+          // Clear any previous error now that hold is active
+          showStatus(container, '', '');
+        } catch (err) {
+          showStatus(container, `❌ Network error: ${err.message}`, 'error');
+        }
+      });
+    }
+
+    // Hold cancel
+    if (holdCancelBtn) {
+      holdCancelBtn.addEventListener('click', async () => {
+        await clearKaraokeState(container, config, { releaseHold: true, clearSession: false });
+        // Re-enable slot selection
+        const buttons = container.querySelectorAll('.karaoke-slot-btn');
+        buttons.forEach(b => { b.disabled = false; b.classList.remove('selected'); });
+      });
+    }
+  }
+
   /**
    * Creates the modal overlay structure without form content
    * 
@@ -380,6 +820,60 @@
   }
 
   function generateBookingFields(config, availableVenues, isVIPBooking) {
+    const isKaraoke = config.bookingType === 'karaoke';
+    if (isKaraoke) {
+      return `
+        ${!config.venue || config.venue === 'both' ? `
+          <div class="form-group">
+            <label class="form-label">Venue *</label>
+            <select name="venue" class="form-select" required>
+              <option value="">Select venue</option>
+              <option value="manor">Manor</option>
+              <option value="hippie">Hippie</option>
+            </select>
+          </div>
+        ` : ''}
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Booking Date *</label>
+            <input type="date" name="bookingDate" class="form-input" placeholder="Select Date" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Guests *</label>
+            <input type="number" name="guestCount" class="form-input" min="1" max="100" placeholder="e.g. 4" required>
+          </div>
+        </div>
+
+        <div class="form-group karaoke-slots-group" style="display:none;">
+          <label class="form-label">Select a Time Slot</label>
+          <div class="karaoke-slots" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px;"></div>
+          <div class="karaoke-slots-loading" style="display:none; align-items:center; gap:8px; color:#6b7280; font-size:14px; margin-top:6px;">
+            <span class="gm-spinner" aria-hidden="true"></span>
+            <span>Loading slots...</span>
+          </div>
+          <div class="karaoke-empty" style="display:none; color:#6b7280; font-size:14px; margin-top:8px;">No slots available for your party size on this date.</div>
+        </div>
+
+        <div class="form-group karaoke-booths" style="display:none;">
+          <label class="form-label">Booth</label>
+          <select name="boothId" class="form-select">
+            <option value="">Select a booth</option>
+          </select>
+          <div class="karaoke-booths-loading" style="display:none; align-items:center; gap:8px; color:#6b7280; font-size:14px; margin-top:6px;">
+            <span class="gm-spinner" aria-hidden="true"></span>
+            <span>Loading booths...</span>
+          </div>
+        </div>
+
+        <div class="form-group karaoke-hold" style="display:none; color:#111827;">
+          <div class="hold-status" style="display:flex; align-items:center; justify-content:space-between;">
+            <span class="hold-text">Hold active. Expires in <span class="hold-countdown">10:00</span>.</span>
+            <button type="button" class="hold-cancel" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">Cancel</button>
+          </div>
+        </div>
+      `;
+    }
     if (isVIPBooking) {
       return `
         ${!config.venue || config.venue === 'both' ? `
@@ -492,12 +986,54 @@
   function createWidgetHTML(config) {
     const themeClass = config.theme === 'dark' ? 'dark' : '';
     const isVIPBooking = config.bookingType === 'vip_tickets';
+    const isKaraoke = config.bookingType === 'karaoke';
     
     // Get available venues from dynamic data
     let availableVenues = venueConfig || [];
     
     if (config.venue !== 'both' && config.venue) {
       availableVenues = availableVenues.filter(v => v.id === config.venue);
+    }
+
+    // Karaoke Booking form fields
+    if (isKaraoke) {
+      return `
+        <div class="gm-booking-widget ${themeClass}">
+          <div class="widget-card">
+            <div class="widget-header">
+              <h3 class="widget-title">Karaoke Booking</h3>
+            </div>
+            <form id="gm-booking-form" class="widget-form">
+              <div class="form-group">
+                <label class="form-label">Customer Name *</label>
+                <input type="text" name="customerName" class="form-input" placeholder="Enter your name" required>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Email</label>
+                  <input type="email" name="customerEmail" class="form-input" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Phone</label>
+                  <input type="tel" name="customerPhone" class="form-input" placeholder="+44 123 456 7890">
+                </div>
+              </div>
+              ${generateBookingFields(config, availableVenues, false)}
+              ${config.showSpecialRequests ? `
+                <div class="form-group">
+                  <label class="form-label">Special Requests</label>
+                  <textarea name="specialRequests" class="form-textarea" placeholder="Any special requirements..." rows="3"></textarea>
+                </div>
+              ` : ''}
+              <button type="submit" class="submit-button">
+                <span class="button-text">Confirm Booking</span>
+                <span class="loading-spinner" style="display: none;">⏳</span>
+              </button>
+              <div id="widget-status" class="status-container"></div>
+            </form>
+          </div>
+        </div>
+      `;
     }
 
     // VIP Tickets form fields
@@ -717,6 +1253,24 @@
       if (!formData.ticketQuantity || formData.ticketQuantity < 1 || formData.ticketQuantity > 100) {
         errors.ticketQuantity = 'Ticket quantity must be between 1 and 100';
       }
+    } else if (bookingType === 'karaoke') {
+      // Karaoke validation (slot-based; no start/end manual times)
+      if (!formData.venue) {
+        errors.venue = 'Please select a venue';
+      }
+      if (!formData.bookingDate) {
+        errors.bookingDate = 'Please select a booking date';
+      } else {
+        const bookingDate = new Date(formData.bookingDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (bookingDate < today) {
+          errors.bookingDate = 'Booking date cannot be in the past';
+        }
+      }
+      if (!formData.guestCount || formData.guestCount < 1) {
+        errors.guestCount = 'Guest count must be at least 1';
+      }
     } else {
       // Venue Hire validation
       if (!formData.venue) {
@@ -763,12 +1317,13 @@
     const form = event.target;
     const formData = new FormData(form);
     const isVIPBooking = config.bookingType === 'vip_tickets';
+    const isKaraoke = config.bookingType === 'karaoke';
     
     const bookingData = {
       customerName: formData.get('customerName'),
       customerEmail: formData.get('customerEmail') || undefined,
       customerPhone: formData.get('customerPhone') || undefined,
-      bookingType: isVIPBooking ? 'vip_tickets' : 'venue_hire',
+      bookingType: isVIPBooking ? 'vip_tickets' : (isKaraoke ? 'karaoke' : 'venue_hire'),
       venue: formData.get('venue') || config.venue,
       bookingDate: formData.get('bookingDate'),
       specialRequests: formData.get('specialRequests') || undefined,
@@ -776,6 +1331,8 @@
 
     if (isVIPBooking) {
       bookingData.ticketQuantity = parseInt(formData.get('ticketQuantity'));
+    } else if (isKaraoke) {
+      bookingData.guestCount = parseInt(formData.get('guestCount'));
     } else {
       bookingData.venueArea = formData.get('venueArea');
       bookingData.startTime = formData.get('startTime') || undefined;
@@ -798,6 +1355,64 @@
       return;
     }
 
+    // Karaoke submit shortcut: require active hold and finalize via Edge Function
+    if (isKaraoke) {
+      try {
+        const state = getKaraokeState(container);
+        if (!state.holdId) {
+          showStatus(container, '❌ Select a time and booth to continue.', 'error');
+          return;
+        }
+        const submitButton = form.querySelector('.submit-button');
+        const buttonText = submitButton.querySelector('.button-text');
+        const loadingSpinner = submitButton.querySelector('.loading-spinner');
+        buttonText.style.display = 'none';
+        loadingSpinner.style.display = 'inline-block';
+        submitButton.disabled = true;
+
+        const supabase = await ensureSupabaseClient(config);
+        const { data, error } = await karaokeFinalizeBooking(supabase, {
+          holdId: state.holdId,
+          sessionId: state.sessionId,
+          customerName: bookingData.customerName,
+          customerEmail: bookingData.customerEmail,
+          customerPhone: bookingData.customerPhone,
+          guestCount: bookingData.guestCount
+        });
+
+        if (error) {
+          // Conflict/validation handling
+          const status = error?.status || error?.code;
+          if (status === 409 || status === 400 || status === 404) {
+            showStatus(container, '❌ Couldn’t confirm – availability changed. Please reselect a slot.', 'error');
+            await karaokeRefreshAvailability(container, config);
+          } else {
+            showStatus(container, '❌ Server error. Please try again.', 'error');
+          }
+        } else if (data?.success) {
+          showStatus(container, `✅ Booking confirmed. ID: ${data.bookingId}`, 'success');
+          clearKaraokeState(container, config, { clearSession: true });
+          form.reset();
+          // Reset default date to tomorrow (local)
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          form.querySelector('input[name="bookingDate"]').value = formatDateLocal(tomorrow);
+        } else {
+          showStatus(container, '❌ Could not confirm booking. Please try again.', 'error');
+        }
+      } catch (err) {
+        showStatus(container, `❌ Network error: ${err.message}`, 'error');
+      } finally {
+        const submitButton = form.querySelector('.submit-button');
+        const buttonText = submitButton.querySelector('.button-text');
+        const loadingSpinner = submitButton.querySelector('.loading-spinner');
+        buttonText.style.display = 'inline';
+        loadingSpinner.style.display = 'none';
+        submitButton.disabled = false;
+      }
+      return;
+    }
+
     // Show loading state
     const submitButton = form.querySelector('.submit-button');
     const buttonText = submitButton.querySelector('.button-text');
@@ -808,7 +1423,9 @@
     submitButton.disabled = true;
 
     try {
-      const response = await fetch(`${config.apiEndpoint}/public-booking-api`, {
+      const base = (config.apiEndpoint || '').replace(/\/$/, '');
+      const endpointUrl = /public-booking-api(\-v2)?$/i.test(base) ? base : `${base}/public-booking-api`;
+      const response = await fetch(endpointUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -861,9 +1478,14 @@ async function initWidget(container, config) {
     
     // Set default date based on booking type
     const isVIPBooking = config.bookingType === 'vip_tickets';
+    const isKaraoke = config.bookingType === 'karaoke';
     if (isVIPBooking) {
       const nextSaturday = getNextSaturday();
       container.querySelector('input[name="bookingDate"]').value = formatDateToISO(nextSaturday);
+    } else if (isKaraoke) {
+      // Leave empty to avoid implying no availability before selection
+      const input = container.querySelector('input[name="bookingDate"]');
+      if (input) input.value = '';
     } else {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -904,8 +1526,13 @@ async function initWidget(container, config) {
     const form = container.querySelector('#gm-booking-form');
     form.addEventListener('submit', (event) => handleSubmit(event, container, config));
     
+    // Karaoke-specific handlers
+    if (isKaraoke) {
+      setupKaraokeHandlers(container, config);
+    }
+
     // Add dynamic form event listeners for inline widget
-    if (!isVIPBooking) {
+    if (!isVIPBooking && !isKaraoke) {
       const venueSelect = container.querySelector('select[name="venue"]');
       const venueAreaSelect = container.querySelector('select[name="venueArea"]');
       const dateInput = container.querySelector('input[name="bookingDate"]');
@@ -1003,6 +1630,8 @@ async function initWidget(container, config) {
     
     // Create modal overlay
     const modal = createModalOverlay(config);
+    // Attach config for cleanup on close
+    modal.__widgetConfig = config;
     
     // Insert form content directly into modal content (after header)
     const modalContent = modal.querySelector('.gm-booking-modal-content');
@@ -1014,9 +1643,14 @@ async function initWidget(container, config) {
     
     // Set default date based on booking type
     const isVIPBooking = config.bookingType === 'vip_tickets';
+    const isKaraoke = config.bookingType === 'karaoke';
     if (isVIPBooking) {
       const nextSaturday = getNextSaturday();
       formContainer.querySelector('input[name="bookingDate"]').value = formatDateToISO(nextSaturday);
+    } else if (isKaraoke) {
+      // Leave empty to avoid implying no availability before selection
+      const input = formContainer.querySelector('input[name="bookingDate"]');
+      if (input) input.value = '';
     } else {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -1055,10 +1689,23 @@ async function initWidget(container, config) {
     
     // Add form submit handler
     const form = formContainer.querySelector('#gm-booking-form');
-    form.addEventListener('submit', (event) => handleSubmit(event, modal, config));
+    // IMPORTANT: pass formContainer (where karaoke state is stored), not the modal overlay
+    form.addEventListener('submit', (event) => handleSubmit(event, formContainer, config));
     
+    // Karaoke-specific handlers
+    if (isKaraoke) {
+      setupKaraokeHandlers(formContainer, config);
+      // Release hold on modal close
+      const closeBtn = modal.querySelector('.gm-booking-modal-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', async () => {
+          await clearKaraokeState(formContainer, config, { releaseHold: true, clearSession: false });
+        });
+      }
+    }
+
     // Add dynamic form event listeners for modal widget
-    if (!isVIPBooking) {
+    if (!isVIPBooking && !isKaraoke) {
       const venueSelect = formContainer.querySelector('select[name="venue"]');
       const venueAreaSelect = formContainer.querySelector('select[name="venueArea"]');
       const dateInput = formContainer.querySelector('input[name="bookingDate"]');
@@ -1193,6 +1840,16 @@ async function initWidget(container, config) {
   window.closeBookingModal = function() {
     const modal = document.getElementById('gm-booking-modal');
     if (modal) {
+      try {
+        const config = modal.__widgetConfig;
+        if (config && config.bookingType === 'karaoke') {
+          const container = modal.querySelector('.gm-booking-modal-content');
+          if (container) {
+            // Best-effort release
+            clearKaraokeState(container, config, { releaseHold: true, clearSession: false });
+          }
+        }
+      } catch (_) { /* ignore */ }
       modal.remove();
     }
   };
