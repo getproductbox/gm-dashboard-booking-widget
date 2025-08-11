@@ -5,7 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple Booking Widget Test</title>
     <link rel="stylesheet" href="widget.css">
-    <script src="gm-booking-widget-standalone.js"></script>
+    <script>
+      // Explicit test config + cache bust to ensure latest script is used
+      window.GMBookingWidgetConfig = {
+        apiEndpoint: 'https://plksvatjdylpuhjitbfc.supabase.co/functions/v1/public-booking-api-v2',
+        apiKey: 'demo-api-key-2024',
+        supabaseUrl: 'https://plksvatjdylpuhjitbfc.supabase.co',
+        supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3N2YXRqZHlscHVoaml0YmZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NjQ5MzMsImV4cCI6MjA2NjM0MDkzM30.IdM8u1iq88C0ruwp7IkMB7PxwnfwmRyl6uLnBmZq5ys',
+        theme: 'light',
+        primaryColor: '#007bff',
+        showSpecialRequests: true,
+        debug: true
+      };
+    </script>
+    <script src="gm-booking-widget-standalone.js?v=dev"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -92,6 +105,22 @@
                 <h3>🏢 Venue Hire - General</h3>
                 <p>Test venue hire booking with all options</p>
                 <button class="test-button" onclick="openVenueModal()">Book Venue</button>
+            </div>
+            <!-- KARAOKE TESTS -->
+            <div class="test-card">
+                <h3>🎤 Karaoke - General</h3>
+                <p>Test karaoke booking with slot/booth/hold flow</p>
+                <button class="test-button" onclick="openKaraokeModal()">Book Karaoke</button>
+            </div>
+            <div class="test-card">
+                <h3>🎤 Karaoke - Manor</h3>
+                <p>Preconfigured to Manor</p>
+                <button class="test-button" onclick="openKaraokeManor()">Book Karaoke (Manor)</button>
+            </div>
+            <div class="test-card">
+                <h3>🎤 Karaoke - Hippie</h3>
+                <p>Preconfigured to Hippie</p>
+                <button class="test-button" onclick="openKaraokeHippie()">Book Karaoke (Hippie)</button>
             </div>
             
             <div class="test-card">
@@ -183,6 +212,32 @@
             });
         }
         
+        // KARAOKE FUNCTIONS
+        function openKaraokeModal() {
+            GMBookingModal({
+                venue: 'both',
+                theme: 'light',
+                bookingType: 'karaoke',
+                showSpecialRequests: true
+            });
+        }
+        function openKaraokeManor() {
+            GMBookingModal({
+                venue: 'manor',
+                theme: 'light',
+                bookingType: 'karaoke',
+                showSpecialRequests: true
+            });
+        }
+        function openKaraokeHippie() {
+            GMBookingModal({
+                venue: 'hippie',
+                theme: 'light',
+                bookingType: 'karaoke',
+                showSpecialRequests: true
+            });
+        }
+
         console.log('✅ Simple Booking Widget Test Loaded');
         console.log('🎯 All modal functions ready to test');
     </script>
