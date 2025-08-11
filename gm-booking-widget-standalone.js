@@ -200,6 +200,55 @@
     });
   }
 
+  // Unified wrappers to allow module-based API or local fallback
+  async function apiFetchKaraokeVenueSlots(config, params) {
+    if (window.GMKaraokeAPI && typeof window.GMKaraokeAPI.fetchKaraokeVenueSlots === 'function') {
+      return window.GMKaraokeAPI.fetchKaraokeVenueSlots(config, params);
+    }
+    const supabase = await ensureSupabaseClient(config);
+    return fetchKaraokeVenueSlots(supabase, params);
+  }
+
+  async function apiFetchKaraokeBoothsForSlot(config, params) {
+    if (window.GMKaraokeAPI && typeof window.GMKaraokeAPI.fetchKaraokeBoothsForSlot === 'function') {
+      return window.GMKaraokeAPI.fetchKaraokeBoothsForSlot(config, params);
+    }
+    const supabase = await ensureSupabaseClient(config);
+    return fetchKaraokeBoothsForSlot(supabase, params);
+  }
+
+  async function apiKaraokeCreateHold(config, params) {
+    if (window.GMKaraokeAPI && typeof window.GMKaraokeAPI.karaokeCreateHold === 'function') {
+      return window.GMKaraokeAPI.karaokeCreateHold(config, params);
+    }
+    const supabase = await ensureSupabaseClient(config);
+    return karaokeCreateHold(supabase, params);
+  }
+
+  async function apiKaraokeReleaseHold(config, params) {
+    if (window.GMKaraokeAPI && typeof window.GMKaraokeAPI.karaokeReleaseHold === 'function') {
+      return window.GMKaraokeAPI.karaokeReleaseHold(config, params);
+    }
+    const supabase = await ensureSupabaseClient(config);
+    return karaokeReleaseHold(supabase, params);
+  }
+
+  async function apiKaraokeExtendHold(config, params) {
+    if (window.GMKaraokeAPI && typeof window.GMKaraokeAPI.karaokeExtendHold === 'function') {
+      return window.GMKaraokeAPI.karaokeExtendHold(config, params);
+    }
+    const supabase = await ensureSupabaseClient(config);
+    return karaokeExtendHold(supabase, params);
+  }
+
+  async function apiKaraokeFinalizeBooking(config, params) {
+    if (window.GMKaraokeAPI && typeof window.GMKaraokeAPI.karaokeFinalizeBooking === 'function') {
+      return window.GMKaraokeAPI.karaokeFinalizeBooking(config, params);
+    }
+    const supabase = await ensureSupabaseClient(config);
+    return karaokeFinalizeBooking(supabase, params);
+  }
+
   async function fetchPricing(venue, venueArea, date, guests, duration = 4) {
     try {
       const config = window.GMBookingWidgetConfig;
@@ -489,11 +538,11 @@
       // Auto-extend once at T-60s
       if (!state.didAutoExtend && distance <= 60000 && state.holdId) {
         state.didAutoExtend = true;
-        ensureSupabaseClient(config).then(supabase => karaokeExtendHold(supabase, {
+        apiKaraokeExtendHold(config, {
           holdId: state.holdId,
           sessionId: state.sessionId,
           ttlMinutes: 10
-        })).catch(() => {/* ignore errors on auto-extend */});
+        }).catch(() => {/* ignore errors on auto-extend */});
       }
     }
     update();
@@ -516,8 +565,7 @@
       const bookingDate = container.querySelector('input[name="bookingDate"]').value; // already YYYY-MM-DD
       const guestCountStr = container.querySelector('input[name="guestCount"]').value;
       const minCapacity = Math.max(1, parseInt(guestCountStr || '0', 10));
-      const supabase = await ensureSupabaseClient(config);
-      const { data, error } = await fetchKaraokeVenueSlots(supabase, {
+      const { data, error } = await apiFetchKaraokeVenueSlots(config, {
         venue,
         bookingDate,
         minCapacity,
@@ -545,8 +593,7 @@
     }
     if (opts.releaseHold && state.holdId) {
       try {
-        const supabase = await ensureSupabaseClient(config);
-        await karaokeReleaseHold(supabase, { holdId: state.holdId, sessionId: state.sessionId });
+        await apiKaraokeReleaseHold(config, { holdId: state.holdId, sessionId: state.sessionId });
       } catch (_) { /* no-op */ }
     }
     setKaraokeState(container, {
@@ -626,8 +673,7 @@
         if (boothsSelect) boothsSelect.disabled = true;
 
         try {
-          const supabase = await ensureSupabaseClient(config);
-          const { data, error } = await fetchKaraokeBoothsForSlot(supabase, {
+          const { data, error } = await apiFetchKaraokeBoothsForSlot(config, {
             venue, bookingDate, startTime, endTime, minCapacity
           });
           if (error) throw error;
@@ -655,11 +701,10 @@
         if (!boothId || !state?.selectedSlot) return;
 
         try {
-          const supabase = await ensureSupabaseClient(config);
           const venue = (venueSelect?.value) || config.venue;
           const bookingDate = dateInput.value;
           const { startTime, endTime } = state.selectedSlot;
-          const { data, error } = await karaokeCreateHold(supabase, {
+          const { data, error } = await apiKaraokeCreateHold(config, {
             boothId,
             venue,
             bookingDate,
@@ -1142,28 +1187,28 @@
             </div>
             
             <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Email</label>
-                <input type="email" name="customerEmail" class="form-input" placeholder="your@email.com">
-              </div>
-              
-              <div class="form-group">
-                <label class="form-label">Phone</label>
-                <input type="tel" name="customerPhone" class="form-input" placeholder="+44 123 456 7890">
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" name="customerEmail" class="form-input" placeholder="your@email.com">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input type="tel" name="customerPhone" class="form-input" placeholder="+44 123 456 7890">
               </div>
             </div>
             
             <!-- Venue Selection (if not pre-configured) -->
             ${!config.venue || config.venue === 'both' ? `
-              <div class="form-group">
-                <label class="form-label">Venue *</label>
-                <select name="venue" class="form-select" required>
-                  <option value="">Select venue</option>
-                  ${availableVenues.map(venue => 
+            <div class="form-group">
+              <label class="form-label">Venue *</label>
+              <select name="venue" class="form-select" required>
+                <option value="">Select venue</option>
+                ${availableVenues.map(venue => 
                     `<option value="${venue.id}">${venue.name}</option>`
-                  ).join('')}
-                </select>
-              </div>
+                ).join('')}
+              </select>
+            </div>
             ` : ''}
             
             <!-- Venue Area Selection -->
@@ -1286,29 +1331,29 @@
       }
     } else {
       // Venue Hire validation
-      if (!formData.venue) {
-        errors.venue = 'Please select a venue';
-      }
+    if (!formData.venue) {
+      errors.venue = 'Please select a venue';
+    }
 
-      if (!formData.venueArea) {
-        errors.venueArea = 'Please select a venue area';
-      }
+    if (!formData.venueArea) {
+      errors.venueArea = 'Please select a venue area';
+    }
 
-      if (!formData.bookingDate) {
-        errors.bookingDate = 'Please select a booking date';
-      } else {
-        const bookingDate = new Date(formData.bookingDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        if (bookingDate < today) {
-          errors.bookingDate = 'Booking date cannot be in the past';
-        }
+    if (!formData.bookingDate) {
+      errors.bookingDate = 'Please select a booking date';
+    } else {
+      const bookingDate = new Date(formData.bookingDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (bookingDate < today) {
+        errors.bookingDate = 'Booking date cannot be in the past';
       }
+    }
 
-      if (!formData.guestCount || formData.guestCount < 1) {
-        errors.guestCount = 'Guest count must be at least 1';
-      }
+    if (!formData.guestCount || formData.guestCount < 1) {
+      errors.guestCount = 'Guest count must be at least 1';
+    }
     }
 
     return {
@@ -1395,8 +1440,7 @@
         loadingSpinner.style.display = 'inline-block';
         submitButton.disabled = true;
 
-        const supabase = await ensureSupabaseClient(config);
-        const { data, error } = await karaokeFinalizeBooking(supabase, {
+        const { data, error } = await apiKaraokeFinalizeBooking(config, {
           holdId: state.holdId,
           sessionId: state.sessionId,
           customerName: bookingData.customerName,
@@ -1476,9 +1520,9 @@
             const nextSaturday = getNextSaturday();
             form.querySelector('input[name="bookingDate"]').value = formatDateToISO(nextSaturday);
           } else {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            form.querySelector('input[name="bookingDate"]').value = formatDateToISO(tomorrow);
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          form.querySelector('input[name="bookingDate"]').value = formatDateToISO(tomorrow);
           }
         }, 3000);
       } else {
@@ -1494,7 +1538,7 @@
     }
   }
 
-    // Initialize widget
+  // Initialize widget
 async function initWidget(container, config) {
     try {
       // Initialize widget data first
@@ -1514,9 +1558,9 @@ async function initWidget(container, config) {
       const input = container.querySelector('input[name="bookingDate"]');
       if (input) input.value = '';
     } else {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      container.querySelector('input[name="bookingDate"]').value = formatDateToISO(tomorrow);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    container.querySelector('input[name="bookingDate"]').value = formatDateToISO(tomorrow);
     }
     
     // Populate venue areas for pre-configured venues and set default
@@ -1527,8 +1571,8 @@ async function initWidget(container, config) {
       // If venue is pre-configured (no venue dropdown), populate areas immediately
       if (!venueSelect && config.venue && config.venue !== 'both') {
         populateVenueAreas(config.venue, container);
-        
-        // Set default venue area if specified
+    
+    // Set default venue area if specified
         if (config.defaultVenueArea && venueAreaSelect) {
           // Use setTimeout to ensure options are populated first
           setTimeout(() => {
@@ -1836,9 +1880,9 @@ async function initWidget(container, config) {
     init: function(config = {}) {
       const defaultConfig = {
         ...window.GMBookingWidgetConfig,
-        ...config
-      };
-      
+      ...config
+    };
+
       // Handle pre-configuration
       if (config.preConfig) {
         defaultConfig.venue = config.preConfig.venue;
@@ -1900,13 +1944,13 @@ async function initWidget(container, config) {
             initWidget(node, config);
           }
         });
+        });
       });
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
+      
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
   }
 
   // Initialize when DOM is ready
