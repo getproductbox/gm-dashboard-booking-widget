@@ -74,34 +74,9 @@
   async function fetchVenueConfig(venueFilter = null) {
     try {
       const config = window.GMBookingWidgetConfig;
-      const base = (config.apiEndpoint || '').replace(/\/$/, '');
-      let url = `${base}/venue-config-api`;
-      if (venueFilter) {
-        url += `?venue=${venueFilter}`;
-      }
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${config.apiKey}`,
-          'x-api-key': config.apiKey,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      
-      // Handle both single venue and multiple venues response
-      let venues;
-      if (venueFilter) {
-        venues = data.venue ? [data.venue] : [];
-      } else {
-        venues = data.venues || [];
-      }
-      
+      const venues = await (window.GMVenueAPI
+        ? window.GMVenueAPI.fetchVenueConfig(config, venueFilter)
+        : (async () => { throw new Error('GMVenueAPI not available'); })());
       venueConfig = venues;
       dataCache.venueConfig = venues;
       dataCache.lastUpdated = Date.now();
@@ -113,7 +88,6 @@
         error: error.message,
         stack: error.stack
       });
-      // Return empty array to expose the API issue
       return [];
     }
   }
@@ -126,11 +100,15 @@
 
   async function ensureSupabaseClient(config) {
     if (supabaseClient) return supabaseClient;
+    if (window.GMTransport && typeof window.GMTransport.ensureSupabaseClient === 'function') {
+      supabaseClient = await window.GMTransport.ensureSupabaseClient(config);
+      return supabaseClient;
+    }
+    // Fallback to inline loader if module not present
     if (window.supabase && typeof window.supabase.createClient === 'function') {
       supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
       return supabaseClient;
     }
-
     await new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
@@ -209,29 +187,21 @@
   async function fetchPricing(venue, venueArea, date, guests, duration = 4) {
     try {
       const config = window.GMBookingWidgetConfig;
+      if (window.GMVenueAPI && typeof window.GMVenueAPI.fetchPricing === 'function') {
+        return await window.GMVenueAPI.fetchPricing(config, { venue, venueArea, date, guests, duration });
+      }
+      // Fallback to inline request if module missing
       const url = `${config.apiEndpoint}/pricing-api`;
-      
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${config.apiKey}`
         },
-        body: JSON.stringify({
-          venue,
-          venueArea,
-          date,
-          guests,
-          duration
-        })
+        body: JSON.stringify({ venue, venueArea, date, guests, duration })
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return data;
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      return await response.json();
     } catch (error) {
       console.error('Failed to fetch pricing:', error);
       return null;
@@ -1333,7 +1303,11 @@
 
   // Show status message
   function showStatus(container, message, type) {
+    if (window.GMCore && typeof window.GMCore.showStatus === 'function') {
+      return window.GMCore.showStatus(container, message, type);
+    }
     const statusDiv = container.querySelector('#widget-status');
+    if (!statusDiv) return;
     statusDiv.innerHTML = `<div class="status-message status-${type}">${message}</div>`;
   }
 
