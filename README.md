@@ -14,8 +14,26 @@ A modern, lightweight JavaScript widget for booking venues and VIP tickets at GM
 
 ### 1. Include Widget Files
 ```html
-<link rel="stylesheet" href="https://booking-widget.getproductbox.com/widget.css">
-<script src="https://booking-widget.getproductbox.com/gm-booking-widget-standalone.js"></script>
+<link rel="stylesheet" href="widget.css">
+<script src="src/core/dom.js"></script>
+<script src="src/transport/supabase.js"></script>
+<script src="src/api/venue.js"></script>
+<script src="src/api/karaoke.js"></script>
+<script src="src/api/wrappers.js"></script>
+<script src="src/state/store.js"></script>
+<script src="src/state/compat.js"></script>
+<script src="src/ui/components/DateField.js"></script>
+<script src="src/ui/components/GuestField.js"></script>
+<script src="src/ui/components/SlotsGrid.js"></script>
+<script src="src/ui/components/BoothSelect.js"></script>
+<script src="src/ui/components/HoldBanner.js"></script>
+<script src="src/ui/components/Status.js"></script>
+<script src="src/features/karaoke/holds.js"></script>
+<script src="src/features/karaoke/controller.js"></script>
+<script src="src/widget/modal.js"></script>
+<script src="src/api/booking.js"></script>
+<script src="src/widget/forms.js"></script>
+<script src="src/widget/index.js"></script>
 ```
 
 ### 2. Configure API
@@ -76,9 +94,19 @@ GMBookingModal({
 
 ### Files Included
 - `widget.css` - Clean, simplified styles (244 lines)
-- `gm-booking-widget-standalone.js` - Main widget logic
+- `src/` - Modular JavaScript components
 - `index.html` - Demo/landing page
 - `test-simple.html` - Testing interface
+- `test-matrix.html` - Comprehensive testing interface
+
+## Module Boundaries (Internal)
+
+- `src/transport/` — Supabase client loading and low-level transport
+- `src/api/` — Domain APIs: venue and karaoke (no DOM)
+- `src/state/` — Tiny state store used by features
+- `src/ui/components/` — Pure UI components (no data fetching)
+- `src/features/karaoke/` — Feature controllers and hold lifecycle
+- `src/widget/index.js` — Public entrypoint wiring (globals, auto-init)
 
 ## 📖 API Reference
 
@@ -127,6 +155,7 @@ GMBookingModal({
 - ✅ Modular form generation
 - ✅ Professional styling
 - ✅ All booking functionality
+ - ✅ Single-file build with modular internals
 
 ## 🌐 Browser Support
 

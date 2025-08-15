@@ -272,7 +272,26 @@
     
     <!-- Include the widget files -->
     <link rel="stylesheet" href="widget.css">
-    <script src="gm-booking-widget-standalone.js"></script>
+    <script src="src/core/dom.js"></script>
+    <script src="src/transport/supabase.js"></script>
+    <script src="src/api/venue.js"></script>
+    <script src="src/api/karaoke.js"></script>
+    <script src="src/api/wrappers.js"></script>
+    <script src="src/state/store.js"></script>
+    <script src="src/state/compat.js"></script>
+    <script src="src/ui/components/DateField.js"></script>
+    <script src="src/ui/components/GuestField.js"></script>
+    <script src="src/ui/components/SlotsGrid.js"></script>
+    <script src="src/ui/components/BoothSelect.js"></script>
+    <script src="src/ui/components/HoldBanner.js"></script>
+    <script src="src/ui/components/Status.js"></script>
+    <script src="src/features/karaoke/holds.js"></script>
+    <script src="src/features/karaoke/controller.js"></script>
+    <script src="src/widget/modal.js"></script>
+    <script src="src/widget/modal-init.js"></script>
+    <script src="src/api/booking.js"></script>
+    <script src="src/widget/forms.js"></script>
+    <script src="src/widget/index.js"></script>
 </head>
 <body>
     <section class="hero">
@@ -289,6 +308,9 @@
                 </button>
                 <button class="cta-button vip" onclick="openVIPBookingModal()">
                     Book VIP Tickets
+                </button>
+                <button class="cta-button" onclick="openKaraokeModal()">
+                    Book Karaoke
                 </button>
             </div>
         </div>
@@ -417,6 +439,15 @@
                 venue: 'both',
                 theme: 'light',
                 bookingType: 'vip_tickets',
+                showSpecialRequests: true
+            });
+        }
+
+        function openKaraokeModal() {
+            GMBookingModal({
+                venue: 'both',
+                theme: 'light',
+                bookingType: 'karaoke',
                 showSpecialRequests: true
             });
         }

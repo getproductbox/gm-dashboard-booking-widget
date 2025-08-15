@@ -10,7 +10,7 @@
       window.GMBookingWidgetConfig = {
         apiEndpoint: 'https://plksvatjdylpuhjitbfc.supabase.co/functions/v1',
         bookingApiName: 'public-booking-api-v2',
-        apiKey: 'demo-api-key-2024',
+        apiKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3N2YXRqZHlscHVoaml0YmZjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDc2NDkzMywiZXhwIjoyMDY2MzQwOTMzfQ.M4Ikh3gSAVTPDxkMNrXLFxCPjHYqaBC5HcVavpHpNlk',
         supabaseUrl: 'https://plksvatjdylpuhjitbfc.supabase.co',
         supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3N2YXRqZHlscHVoaml0YmZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NjQ5MzMsImV4cCI6MjA2NjM0MDkzM30.IdM8u1iq88C0ruwp7IkMB7PxwnfwmRyl6uLnBmZq5ys',
         theme: 'light',
@@ -19,11 +19,27 @@
         debug: true
       };
     </script>
+    <!-- Load individual modules -->
     <script src="src/core/dom.js?v=dev"></script>
     <script src="src/transport/supabase.js?v=dev"></script>
     <script src="src/api/venue.js?v=dev"></script>
     <script src="src/api/karaoke.js?v=dev"></script>
-    <script src="gm-booking-widget-standalone.js?v=dev"></script>
+    <script src="src/api/wrappers.js?v=dev"></script>
+    <script src="src/state/store.js?v=dev"></script>
+    <script src="src/state/compat.js?v=dev"></script>
+    <script src="src/ui/components/DateField.js?v=dev"></script>
+    <script src="src/ui/components/GuestField.js?v=dev"></script>
+    <script src="src/ui/components/SlotsGrid.js?v=dev"></script>
+    <script src="src/ui/components/BoothSelect.js?v=dev"></script>
+    <script src="src/ui/components/HoldBanner.js?v=dev"></script>
+    <script src="src/ui/components/Status.js?v=dev"></script>
+    <script src="src/features/karaoke/holds.js?v=dev"></script>
+    <script src="src/features/karaoke/controller.js?v=dev"></script>
+    <script src="src/widget/modal.js?v=dev"></script>
+    <script src="src/widget/modal-init.js?v=dev"></script>
+    <script src="src/api/booking.js?v=dev"></script>
+    <script src="src/widget/forms.js?v=dev"></script>
+    <script src="src/widget/index.js?v=dev"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

@@ -18,12 +18,10 @@ We've **simplified and fixed** the booking widget! The major improvements:
 Replace these files on your marketing site:
 
 **Files to Update:**
-- `gm-booking-widget-standalone.js` ← **MUST UPDATE**
+- `src/` directory (all modular JavaScript files) ← **MUST UPDATE**
 - `widget.css` ← **MUST UPDATE**
 
-**CDN URLs (if using):**
-- `https://booking-widget.getproductbox.com/gm-booking-widget-standalone.js`
-- `https://booking-widget.getproductbox.com/widget.css`
+**Note:** The widget now uses a modular architecture. All files in the `src/` directory must be included in the correct order.
 
 ### **2. Configure API (new option)**
 
@@ -34,7 +32,7 @@ Set `window.GMBookingWidgetConfig` before loading the script:
   window.GMBookingWidgetConfig = {
     apiEndpoint: 'https://YOUR-PROJECT.supabase.co/functions/v1',
     bookingApiName: 'public-booking-api-v2',
-    apiKey: 'demo-api-key-2024',
+    apiKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3N2YXRqZHlscHVoaml0YmZjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDc2NDkzMywiZXhwIjoyMDY2MzQwOTMzfQ.M4Ikh3gSAVTPDxkMNrXLFxCPjHYqaBC5HcVavpHpNlk',
     supabaseUrl: 'https://YOUR-PROJECT.supabase.co',
     supabaseAnonKey: 'YOUR-ANON-KEY'
   };

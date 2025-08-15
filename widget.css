@@ -123,6 +123,13 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.gm-booking-modal-overlay.active {
+  display: flex;
+  opacity: 1;
 }
 
 .gm-booking-modal-content {
@@ -239,6 +246,49 @@
 
 .gm-booking-modal-form .loading-spinner {
   display: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: gm-spin 0.75s linear infinite;
+  margin-left: 8px;
+}
+
+/* Simple spinner used for async loads */
+.gm-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  display: inline-block;
+  animation: gm-spin 0.75s linear infinite;
+}
+
+@keyframes gm-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Karaoke loading states - center aligned */
+.karaoke-slots-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.karaoke-booths-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
 }
 
 /* VIP Button Styling (when bookingType is vip_tickets) */
@@ -266,4 +316,115 @@
     margin: 20px;
     width: calc(100% - 40px);
   }
+}
+
+/* Karaoke slots grid */
+.karaoke-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+  margin-bottom: 24px;
+}
+
+/* Karaoke slot buttons */
+.karaoke-slot-btn {
+  appearance: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px 12px;
+  background: #ffffff;
+  color: #111827;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.karaoke-slot-btn:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.karaoke-slot-btn.selected {
+  background: #111827;
+  color: #ffffff;
+  border-color: #111827;
+}
+
+.karaoke-slot-btn .slot-time {
+  font-weight: 500;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.karaoke-slot-btn .slot-capacity {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.karaoke-slot-btn.selected .slot-capacity {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Karaoke form sections spacing */
+.karaoke-slots-group {
+  margin-bottom: 24px;
+}
+
+.karaoke-booths-group {
+  margin-bottom: 24px;
+}
+
+/* Hold banner */
+.karaoke-hold {
+  display: none;
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #f0f9ff;
+  border: 1px solid #0ea5e9;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #0c4a6e;
+  font-weight: 500;
+}
+
+.karaoke-slot-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Slot capacity chips */
+.karaoke-slot-btn .slot-line {
+  font-weight: 600;
+}
+
+.karaoke-slot-btn .cap-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.karaoke-slot-btn .cap-chip {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.karaoke-slot-btn.selected .cap-chip {
+  background: #1f2937;
+  color: #fff;
+  border-color: #111827;
 }

@@ -6,7 +6,7 @@
   // Widget configuration
   window.GMBookingWidgetConfig = window.GMBookingWidgetConfig || {
     apiEndpoint: 'https://plksvatjdylpuhjitbfc.supabase.co/functions/v1/public-booking-api-v2',
-    apiKey: 'demo-api-key-2024',
+    	apiKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsa3N2YXRqZHlscHVoaml0YmZjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDc2NDkzMywiZXhwIjoyMDY2MzQwOTMzfQ.M4Ikh3gSAVTPDxkMNrXLFxCPjHYqaBC5HcVavpHpNlk',
     theme: 'light',
     primaryColor: '#007bff',
     showSpecialRequests: true
